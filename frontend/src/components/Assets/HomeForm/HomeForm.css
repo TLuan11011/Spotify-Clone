@@ -1,0 +1,29 @@
+/* Kiểm tra màu nền để tránh bị lỗi kế thừa */
+body {
+    background-color: white !important;
+  }
+  
+  .space-y-8 {
+    background-color: white;
+  }
+  
+  /* Nếu mục đích là chỉnh màu nền của card */
+  .group .relative {
+    background-color: rgb(98, 33, 33); /* Kiểm tra lại */
+  }
+  
+  /* Nếu grid không hiển thị màu, thử thêm !important */
+  .grid {
+    background-color: rgb(99, 19, 19) !important;
+  }
+  
+  /* Kiểm tra nền của card */
+  .bg-gray-50 {
+    background-color: aliceblue !important;
+  }
+  
+  /* Kiểm tra nền của sidebar (nếu nó cũng bị màu sai) */
+  .sidebar {
+    background-color: #1db954; /* Hoặc màu xanh bạn muốn */
+  }
+  

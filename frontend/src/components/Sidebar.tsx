@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { HomeIcon, ListMusicIcon, HeartIcon, MessageCircleIcon, PlusCircleIcon, Trash2Icon } from "lucide-react";
+import { HomeIcon, ListMusicIcon, HeartIcon, MessageCircleIcon, PlusCircleIcon } from "lucide-react";
 import { useState } from "react";
 
 const Sidebar = () => {
@@ -9,39 +9,36 @@ const Sidebar = () => {
     { id: 3, name: "Study Session" },
     { id: 4, name: "Party Anthems" },
   ]);
-  const [isFormVisible, setIsFormVisible] = useState(false); // State để hiển thị form
-  const [newPlaylistName, setNewPlaylistName] = useState(""); // State để lưu tên playlist mới
+  const [isFormVisible, setIsFormVisible] = useState(false);
+  const [newPlaylistName, setNewPlaylistName] = useState("");
 
-  // Hàm xử lý khi nhấn nút "+"
   const handleAddPlaylistClick = () => {
     setIsFormVisible(true);
   };
 
-  // Hàm xử lý khi submit form
   const handleFormSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (newPlaylistName.trim() === "") return; // Không thêm nếu tên trống
+    if (newPlaylistName.trim() === "") return;
 
     const newPlaylist = {
-      id: playlists.length + 1, // Tạo ID mới (tạm thời, trong thực tế nên dùng UUID hoặc từ backend)
+      id: playlists.length + 1,
       name: newPlaylistName.trim(),
     };
 
-    setPlaylists([...playlists, newPlaylist]); // Thêm playlist mới vào danh sách
-    setNewPlaylistName(""); // Reset input
-    setIsFormVisible(false); // Ẩn form
+    setPlaylists([...playlists, newPlaylist]);
+    setNewPlaylistName("");
+    setIsFormVisible(false);
   };
 
-  // Hàm xử lý khi hủy form
   const handleCancel = () => {
     setNewPlaylistName("");
     setIsFormVisible(false);
   };
 
   return (
-    <div className="w-64 h-full bg-gray-50 border-r border-gray-200 flex flex-col">
+    <div className="w-64 h-full bg-[#121212] border-r border-gray-900 flex flex-col text-gray-300">
       <div className="p-6">
-        <h1 className="text-2xl font-bold text-gray-800">MusicStream</h1>
+        <h1 className="text-2xl font-bold text-white">Spotify</h1>
       </div>
       <nav className="flex-1 px-4">
         <ul className="space-y-1">
@@ -49,8 +46,8 @@ const Sidebar = () => {
             <NavLink
               to="/"
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg ${
-                  isActive ? "bg-gray-200 text-gray-900" : "text-gray-600 hover:bg-gray-100"
+                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
+                  isActive ? "bg-[#1db954] text-black" : "hover:bg-gray-800 hover:text-white"
                 }`
               }
             >
@@ -62,8 +59,8 @@ const Sidebar = () => {
             <NavLink
               to="/loved"
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg ${
-                  isActive ? "bg-gray-200 text-gray-900" : "text-gray-600 hover:bg-gray-100"
+                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
+                  isActive ? "bg-[#1db954] text-black" : "hover:bg-gray-800 hover:text-white"
                 }`
               }
             >
@@ -75,8 +72,8 @@ const Sidebar = () => {
             <NavLink
               to="/chat"
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg ${
-                  isActive ? "bg-gray-200 text-gray-900" : "text-gray-600 hover:bg-gray-100"
+                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
+                  isActive ? "bg-[#1db954] text-black" : "hover:bg-gray-800 hover:text-white"
                 }`
               }
             >
@@ -85,20 +82,15 @@ const Sidebar = () => {
             </NavLink>
           </li>
         </ul>
+
         <div className="mt-8">
           <div className="flex items-center justify-between px-4 py-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Playlists
-            </h3>
-            <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={handleAddPlaylistClick}
-            >
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-gray-400">Playlists</h3>
+            <button className="text-gray-400 hover:text-white" onClick={handleAddPlaylistClick}>
               <PlusCircleIcon size={16} />
             </button>
           </div>
 
-          {/* Form thêm playlist mới */}
           {isFormVisible && (
             <div className="px-4 py-2">
               <form onSubmit={handleFormSubmit} className="flex flex-col gap-2">
@@ -107,19 +99,16 @@ const Sidebar = () => {
                   value={newPlaylistName}
                   onChange={(e) => setNewPlaylistName(e.target.value)}
                   placeholder="Enter playlist name"
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-400"
+                  className="w-full px-3 py-2 text-sm bg-gray-800 text-white border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1db954]"
                 />
                 <div className="flex gap-2">
-                  <button
-                    type="submit"
-                    className="px-3 py-1 text-sm text-white bg-gray-800 rounded-lg hover:bg-gray-700"
-                  >
+                  <button type="submit" className="px-3 py-1 text-sm text-black bg-[#1db954] rounded-lg hover:bg-green-500">
                     Add
                   </button>
                   <button
                     type="button"
                     onClick={handleCancel}
-                    className="px-3 py-1 text-sm text-gray-600 bg-gray-200 rounded-lg hover:bg-gray-300"
+                    className="px-3 py-1 text-sm text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600"
                   >
                     Cancel
                   </button>
@@ -134,8 +123,8 @@ const Sidebar = () => {
                 <NavLink
                   to={`/playlist/${playlist.id}`}
                   className={({ isActive }) =>
-                    `flex items-center px-4 py-2 text-sm rounded-lg ${
-                      isActive ? "bg-gray-200 text-gray-900" : "text-gray-600 hover:bg-gray-100"
+                    `flex items-center px-4 py-2 text-sm rounded-lg transition ${
+                      isActive ? "bg-[#1db954] text-black" : "hover:bg-gray-800 hover:text-white"
                     }`
                   }
                 >
