@@ -10,7 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "lucide-react": "latest",
+    "axios": "^1.8.4",
+    "lucide-react": "^0.486.0",
     "magic-patterns-vite-template": "file:",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

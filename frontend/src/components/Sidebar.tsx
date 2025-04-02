@@ -9,6 +9,7 @@ const Sidebar = () => {
     { id: 3, name: "Study Session" },
     { id: 4, name: "Party Anthems" },
   ]);
+  
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState("");
 
@@ -70,7 +71,7 @@ const Sidebar = () => {
           </li>
           <li>
             <NavLink
-              to="/chat"
+              to="/all_songs"
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
                   isActive ? "bg-[#1db954] text-black" : "hover:bg-gray-800 hover:text-white"
@@ -78,7 +79,7 @@ const Sidebar = () => {
               }
             >
               <MessageCircleIcon size={18} />
-              Chat
+              All Songs
             </NavLink>
           </li>
         </ul>
