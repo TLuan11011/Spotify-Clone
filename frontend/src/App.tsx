@@ -150,7 +150,7 @@ export function App() {
                 user={user}
               >
                 <Routes>
-                  <Route path="/" element={<Home />} />
+                  <Route path="/" element={<Home setCurrentSong={() => {}} />} />
                   <Route path="/playlist/:id" element={<Playlist />} />
                   <Route path="/all_songs" element={<AllSongs />} />
                   <Route path="/chat" element={<Chat/>}/>
