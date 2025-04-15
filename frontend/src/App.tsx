@@ -1,202 +1,165 @@
-// import React, { useState } from "react";
-// import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-// import { Search } from "lucide-react"; // Import icon tìm kiếm từ lucide-react
-// import Sidebar from "./components/Sidebar";
-// import MusicPlayer from "./components/MusicPlayer";
-
-// import Playlist from "./components/Assets/Playlist";
-// import Home from "./components/Assets/HomeForm/Home";
-// import LovedSongs from "./components/Assets/LovedSongs";
-// import Chat from "./components/Assets/Chat";
-// // import Login from "./components/Assets/LoginForm/LoginForm";
-// import SleepTimer from "./components/SleepTimer";
-// import AllSongs from "./pages/AllSongs";
-
-// export function App() {
-//   // const [isLoggedIn, setIsLoggedIn] = useState(false);
-//   const [showSleepTimer, setShowSleepTimer] = useState(false);
-//   const [searchQuery, setSearchQuery] = useState(""); // State cho thanh tìm kiếm
-//   const [currentSong, setCurrentSong] = useState({
-//     title: "No song playing",
-//     artist: "",
-//     cover: "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fA%3D%3D&auto=format&fit=crop&w=1074&q=80",
-//   });
-
-//   return (
-//     <Router>
-//       <div className="flex h-screen w-full bg-[#121212] text-white overflow-hidden">
-//         {/* {isLoggedIn ? ( */}
-//           <>
-//             <Sidebar />
-//             <div className="flex flex-col flex-1 overflow-hidden">
-//               {/* Header */}
-//               <header className="h-16 flex items-center justify-between px-6 bg-[#181818] border-b border-[#282828]">
-//                 {/* Thanh tìm kiếm */}
-//                 <div className="relative w-72">
-//                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-//                   <input
-//                     type="text"
-//                     placeholder="What do you want to play?"
-//                     value={searchQuery}
-//                     onChange={(e) => setSearchQuery(e.target.value)}
-//                     className="w-full pl-10 pr-4 py-2 bg-[#282828] text-white rounded-full outline-none placeholder-gray-400 focus:ring-2 focus:ring-gray-500"
-//                   />
-//                 </div>
-
-//                 {/* Các nút bên phải */}
-//                 <div className="flex items-center gap-4">
-//                   <button
-//                     onClick={() => setShowSleepTimer(!showSleepTimer)}
-//                     className="text-sm text-gray-300 hover:text-white transition-colors"
-//                   >
-//                     Sleep Timer
-//                   </button>
-//                   <button
-//                     // onClick={() => setIsLoggedIn(false)}
-//                     // className="px-4 py-1.5 text-sm bg-gray-700 rounded-full hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-//                   >
-//                     Logout
-//                   </button>
-//                 </div>
-//               </header>
-
-//               {/* Main Content */}
-//               <main className="flex-1 bg-[#121212] overflow-y-auto p-6">
-//                 <Routes>
-//                   <Route path="/" element={<Home setCurrentSong={setCurrentSong} />} />
-//                   <Route path="/playlist/:id" element={<Playlist setCurrentSong={setCurrentSong} />} />
-//                   <Route path="/loved" element={<LovedSongs setCurrentSong={setCurrentSong} />} />
-//                   <Route path="/chat" element={<Chat />} />
-//                   <Route path="/all_songs" element={<AllSongs/>} />
-//                   <Route path="*" element={<Navigate to="/" />} />
-//                 </Routes>
-//               </main>
-
-//               {/* Music Player */}
-//               <MusicPlayer currentSong={currentSong} />
-//             </div>
-
-//             {/* Sleep Timer Popup */}
-//             {showSleepTimer && <SleepTimer onClose={() => setShowSleepTimer(false)} />}
-//           </>
-//         {/* ) : (
-//           <Routes>
-//             <Route path="*" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
-//           </Routes>
-//         )} */}
-//       </div>
-//     </Router>
-//   );
-// }
-
 import { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
+  useNavigate,
 } from "react-router-dom";
-import { Search } from "lucide-react"; // Import icon tìm kiếm từ lucide-react
+import { Search } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import MusicPlayer from "./components/MusicPlayer";
-
-import Playlist from "./components/Assets/Playlist";
+import Playlist from "./pages/Playlist";
 import Home from "./components/Assets/HomeForm/Home";
-import LovedSongs from "./components/Assets/LovedSongs";
-// import Chat from "./components/Assets/Chat"; // Remove the Chat import
-// import Login from "./components/Assets/LoginForm/LoginForm";
 import SleepTimer from "./components/SleepTimer";
 import AllSongs from "./pages/AllSongs";
+import AdminPage from "./Admin";
+import Chat from "./pages/Chat"
 import { AudioProvider } from "./AudioContext";
+import RequireAuth from "./routes/RequireAuth";
+import LoginAdmin from "./pages/LoginAdmin";
+import LoginUser from "./pages/LoginUser";
+
+type MainLayoutProps = {
+  children: React.ReactNode;
+  setSearchQuery: (value: string) => void;
+  searchQuery: string;
+  setShowSleepTimer: React.Dispatch<React.SetStateAction<boolean>>;
+  showSleepTimer: boolean;
+  isLoggedIn: boolean;
+  setIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
+  user: { id: number; username: string; email: string } | null;
+};
+
+function MainLayout({
+  children,
+  setSearchQuery,
+  searchQuery,
+  setShowSleepTimer,
+  showSleepTimer,
+  isLoggedIn,
+  setIsLoggedIn,
+  user,
+}: MainLayoutProps) {
+  const navigate = useNavigate();
+
+  const handleAuthAction = () => {
+    if (isLoggedIn) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      setIsLoggedIn(false);
+      navigate("/");
+    } else {
+      navigate("/login");
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-full bg-[#121212] text-white overflow-hidden">
+      <Sidebar isLoggedIn={isLoggedIn} user={user} />
+      <div className="flex flex-col flex-1 overflow-hidden">
+        <header className="h-16 flex items-center justify-between px-6 bg-[#181818] border-b border-[#282828]">
+          <div className="relative w-72">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={18}
+            />
+            <input
+              type="text"
+              placeholder="What do you want to play?"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 bg-[#282828] text-white rounded-full outline-none placeholder-gray-400 focus:ring-2 focus:ring-gray-500"
+            />
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowSleepTimer((prev: boolean) => !prev)}
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              Sleep Timer
+            </button>
+            <button
+              onClick={handleAuthAction}
+              className="text-sm text-gray-300 hover:text-white transition-colors"
+            >
+              {isLoggedIn ? "Logout" : "Login"}
+            </button>
+          </div>
+        </header>
+        <main className="flex-1 bg-[#121212] overflow-y-auto p-6">
+          {children}
+        </main>
+        <MusicPlayer />
+      </div>
+      {showSleepTimer && <SleepTimer onClose={() => setShowSleepTimer(false)} />}
+    </div>
+  );
+}
 
 export function App() {
-  // const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [showSleepTimer, setShowSleepTimer] = useState(false);
-  const [searchQuery, setSearchQuery] = useState(""); // State cho thanh tìm kiếm
-  const [currentSong, setCurrentSong] = useState({
-    title: "No song playing",
-    artist: "",
-    cover:
-      "https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fA%3D%3D&auto=format&fit=crop&w=1074&q=80",
+  const [showSleepTimer, setShowSleepTimer] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>("");
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(
+    !!localStorage.getItem("token")
+  );
+  const [user, setUser] = useState<{
+    id: number;
+    username: string;
+    email: string;
+  } | null>(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
   });
 
   return (
     <AudioProvider>
       <Router>
-        <div className="flex h-screen w-full bg-[#121212] text-white overflow-hidden">
-          {/* {isLoggedIn ? ( */}
-          <>
-            <Sidebar />
-            <div className="flex flex-col flex-1 overflow-hidden">
-              {/* Header */}
-              <header className="h-16 flex items-center justify-between px-6 bg-[#181818] border-b border-[#282828]">
-                {/* Thanh tìm kiếm */}
-                <div className="relative w-72">
-                  <Search
-                    className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
-                    size={18}
-                  />
-                  <input
-                    type="text"
-                    placeholder="What do you want to play?"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 bg-[#282828] text-white rounded-full outline-none placeholder-gray-400 focus:ring-2 focus:ring-gray-500"
-                  />
-                </div>
-
-                {/* Các nút bên phải */}
-                <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setShowSleepTimer(!showSleepTimer)}
-                    className="text-sm text-gray-300 hover:text-white transition-colors"
-                  >
-                    Sleep Timer
-                  </button>
-                  <button
-                  // onClick={() => setIsLoggedIn(false)}
-                  // className="px-4 py-1.5 text-sm bg-gray-700 rounded-full hover:bg-gray-600 text-gray-300 hover:text-white transition-colors"
-                  >
-                    out
-                  </button>
-                </div>
-              </header>
-
-              {/* Main Content */}
-              <main className="flex-1 bg-[#121212] overflow-y-auto p-6">
+        <Routes>
+          <Route
+            path="/admin/*"
+            element={
+              <RequireAuth>
+                <AdminPage />
+              </RequireAuth>
+            }
+          />
+          <Route
+            path="/login"
+            element={
+              <LoginUser
+                setIsLoggedIn={setIsLoggedIn}
+                onLogin={(_email, _password, userData) => {
+                  setUser(userData);
+                  localStorage.setItem("user", JSON.stringify(userData));
+                }}
+              />
+            }
+          />
+          <Route path="/login/admin" element={<LoginAdmin />} />
+          <Route
+            path="*"
+            element={
+              <MainLayout
+                setSearchQuery={setSearchQuery}
+                searchQuery={searchQuery}
+                setShowSleepTimer={setShowSleepTimer}
+                showSleepTimer={showSleepTimer}
+                isLoggedIn={isLoggedIn}
+                setIsLoggedIn={setIsLoggedIn}
+                user={user}
+              >
                 <Routes>
-                  <Route
-                    path="/"
-                    element={<Home setCurrentSong={setCurrentSong} />}
-                  />
-                  <Route
-                    path="/playlist/:id"
-                    element={<Playlist setCurrentSong={setCurrentSong} />}
-                  />
-                  <Route
-                    path="/loved"
-                    element={<LovedSongs setCurrentSong={setCurrentSong} />}
-                  />
+                  <Route path="/" element={<Home />} />
+                  <Route path="/playlist/:id" element={<Playlist />} />
                   <Route path="/all_songs" element={<AllSongs />} />
+                  <Route path="/chat" element={<Chat/>}/>
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
-              </main>
-
-              {/* Music Player */}
-              <MusicPlayer/>
-            </div>
-
-            {/* Sleep Timer Popup */}
-            {showSleepTimer && (
-              <SleepTimer onClose={() => setShowSleepTimer(false)} />
-            )}
-          </>
-          {/* ) : (
-          <Routes>
-            <Route path="*" element={<Login onLogin={() => setIsLoggedIn(true)} />} />
-          </Routes>
-        )} */}
-        </div>
+              </MainLayout>
+            }
+          />
+        </Routes>
       </Router>
     </AudioProvider>
   );

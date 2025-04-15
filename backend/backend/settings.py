@@ -11,10 +11,12 @@ https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
 from pathlib import Path
+import mimetypes
+import os
+mimetypes.add_type("audio/mpeg", ".mp3", True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -26,7 +28,6 @@ SECRET_KEY = 'django-insecure-=p%qjc2h#5(2+smh&mq@bgsmvu6l%fn=lchm!%4fmsn%yio72k
 DEBUG = True
 
 ALLOWED_HOSTS = []
-
 
 # Application definition
 
@@ -57,6 +58,11 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
 ]
 
+# Cấu hình CORS
+CORS_ALLOW_ALL_ORIGINS = True  # Chỉ để test, sau này giới hạn domain cụ thể
+CORS_ALLOW_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
+CORS_ALLOW_HEADERS = ['*']
+
 ROOT_URLCONF = 'backend.urls'
 
 TEMPLATES = [
@@ -77,7 +83,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
@@ -94,7 +99,6 @@ DATABASES = {
         }
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -114,7 +118,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.1/topics/i18n/
 
@@ -126,11 +129,18 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# Media files (uploaded files like MP3)
+MEDIA_URL = '/audio/'
+MEDIA_ROOT = BASE_DIR / 'audio'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
