@@ -48,7 +48,7 @@
 #         fields = '__all__'
 
 from rest_framework import serializers
-from .models import User, Song, Playlist, PlaylistSong, Album, Artist
+from .models import User, Song, Playlist, PlaylistSong, Album, Artist, Message
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -87,4 +87,9 @@ class AlbumsSerializer(serializers.ModelSerializer):
 class ArtistSerializer(serializers.ModelSerializer):
     class Meta:
         model = Artist
+        fields = '__all__'
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
         fields = '__all__'

@@ -25,6 +25,8 @@ from .views import (
     changestatus_user,
     login_user,
     add_song,
+    get_messages_between_users,
+    send_message,
 )
 
 urlpatterns = [
@@ -63,4 +65,8 @@ urlpatterns = [
     path('api/users/login/', login_user, name='login_user'),
     path('api/delete-user/<int:pk>/', delete_user, name='delete_user'),
     path('api/users/<int:pk>/toggle-status/', changestatus_user, name='changestatus_user'),
+
+    #message
+    path('api/messages/', get_messages_between_users, name='get_messages_between_users'),
+    path('api/send_message/', send_message, name='send_message'),
 ]
