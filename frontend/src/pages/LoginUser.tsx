@@ -451,6 +451,7 @@ const LoginUser = ({ onLogin, setIsLoggedIn }: LoginUserProps) => {
           username: fullName,
           email: email,
           password_hash: password,
+          isPremium: 0
         });
         setIsLogin(true);
         setEmail("");

@@ -113,7 +113,7 @@ class User(models.Model):
     password_hash = models.CharField(max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
     status = models.IntegerField(default=1)
-    isPremium = models.BooleanField(default=True)
+    isPremium = models.BooleanField(default=False)
     def __str__(self):
         return self.username
 
@@ -156,6 +156,9 @@ class Song(models.Model):
     duration = models.IntegerField()
     song_url = models.CharField(max_length=500)
     status = models.IntegerField(default=1)
+    premium = models.IntegerField(default=0)  # ← thêm dòng này
+    play_count = models.IntegerField(default=0)
+    lyrics = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} - {self.artist.name}"
@@ -191,4 +194,3 @@ class PlaylistSong(models.Model):
     class Meta:
         db_table = 'playlist_songs'
         managed = True
-

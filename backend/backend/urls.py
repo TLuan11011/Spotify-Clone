@@ -26,11 +26,11 @@ Including another URLconf
 # if settings.DEBUG:
 #     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-# backend/urls.py
 from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('app.urls')),  # Bao gồm các URL từ app
+    path('api/paypal/', include('payments.urls')),
 ]

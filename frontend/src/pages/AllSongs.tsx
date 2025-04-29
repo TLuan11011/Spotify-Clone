@@ -11,24 +11,36 @@ type Song = {
   duration: number;
   song_url: string;
   image_url: string;
+  premium: number;
 };
 
 const AllSongs: React.FC = () => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [loading, setLoading] = useState(true);
   const { handlePlaySong, setSongList } = useAudio();
+  
+  // Placeholder for user premium status (replace with actual logic)
+  const isPremiumUser = false; // Example: Replace with auth context or API call to check user status
 
   useEffect(() => {
     setLoading(true);
     axios
       .get("http://127.0.0.1:8000/api/songs/")
       .then((response) => {
-        const data = response.data.map((song: any) => ({
-          ...song,
-          artist: song.artist_name,
+        const mappedSongs = response.data.map((song: any) => ({
+          id: song.id,
+          name: song.name || "Unknown Song",
+          artist: song.artist_name || "Unknown Artist",
+          album: song.album_name || null,
+          duration: song.duration || 1,
+          song_url: song.song_url || "",
+          image_url: song.album_img
+            ? `/uploads/albums/${song.album_img}`
+            : "/default-cover.png",
+          premium: song.premium || 0,
         }));
-        setSongs(data);
-        setSongList(data);
+        setSongs(mappedSongs);
+        setSongList(mappedSongs);
       })
       .catch((error) => {
         console.error("Error fetching songs:", error);
@@ -45,15 +57,44 @@ const AllSongs: React.FC = () => {
     }
   }, [songs, handlePlaySong]);
 
+  const handleDownload = useCallback((e: React.MouseEvent, song: Song) => {
+    e.stopPropagation(); // Prevent triggering the song play event
+
+    // Check if the song is premium and if the user is not premium
+    if (song.premium === 1 && !isPremiumUser) {
+      alert("Bạn cần tài khoản Premium để tải bài hát này.");
+      return;
+    }
+
+    // Proceed with download if the song is non-premium or the user is premium
+    const songUrl = `http://127.0.0.1:8000/audio/${song.song_url}`;
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", songUrl, true);
+    xhr.responseType = "blob";
+    xhr.onload = () => {
+      const blob = xhr.response;
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `${song.name}.mp3`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    };
+    xhr.onerror = () => {
+      alert("Không thể tải bài hát này.");
+    };
+    xhr.send();
+  }, [isPremiumUser]); // Add isPremiumUser as a dependency
+
   if (loading) {
     return <div className="p-6 text-gray-400">Đang tải...</div>;
   }
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-1">
         <div>
-          <h1 className="text-3xl font-bold mb-2">All Songs</h1>
+          <h1 className="text-3xl font-bold mb-2 p-5">All Songs</h1>
         </div>
         <button
           onClick={handlePlayAll}
@@ -63,7 +104,7 @@ const AllSongs: React.FC = () => {
           Play All
         </button>
       </div>
-      <div className="bg-[#181818] rounded-lg overflow-hidden">
+      <div className="bg-[#181818] rounded-lg overflow-hidden mr-5 ml-5">
         <table className="w-full">
           <thead className="bg-[#282828] text-left">
             <tr>
@@ -101,17 +142,20 @@ const AllSongs: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <img
-                        src={`http://127.0.0.1:8000${song.image_url}`}
+                        src={song.image_url}
                         alt={song.name}
                         className="h-10 w-10 rounded object-cover mr-3"
                       />
                       <div>
-                        <div className="text-sm font-medium text-gray-300">
+                        <div className="text-sm font-medium text-gray-300 flex items-center gap-2">
                           {song.name}
+                          {song.premium === 1 && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors">
+                              Premium
+                            </span>
+                          )}
                         </div>
-                        <div className="text-sm text-gray-500">
-                          {song.artist}
-                        </div>
+                        <div className="text-sm text-gray-500">{song.artist}</div>
                       </div>
                     </div>
                   </td>
@@ -122,7 +166,10 @@ const AllSongs: React.FC = () => {
                     {formatDuration(song.duration)}
                   </td>
                   <td>
-                    <button className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex justify-center items-center">
+                    <button
+                      onClick={(e) => handleDownload(e, song)}
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 flex justify-center items-center"
+                    >
                       <CircleEllipsis />
                     </button>
                   </td>

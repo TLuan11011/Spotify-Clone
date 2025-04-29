@@ -58,9 +58,10 @@ class UserSerializer(serializers.ModelSerializer):
 class SongSerializer(serializers.ModelSerializer):
     artist_name = serializers.CharField(source='artist.name', read_only=True)
     album_name = serializers.CharField(source='album.name', read_only=True, allow_null=True)
+    album_img = serializers.CharField(source='album.cover_image', read_only=True, allow_null=True)
     class Meta:
         model = Song
-        fields = ['id', 'name', 'artist', 'artist_name', 'album', 'album_name', 'duration', 'song_url', 'status']
+        fields = ['id', 'name', 'artist', 'artist_name', 'album', 'album_name', 'album_img', 'duration', 'song_url', 'status', 'premium', 'play_count', 'lyrics']
 
 class PlaylistSongSerializer(serializers.ModelSerializer):
     song = SongSerializer(read_only=True)
@@ -80,6 +81,7 @@ class PlaylistSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'user', 'user_id', 'created_at', 'cover_image', 'description', 'status', 'songs']
 
 class AlbumsSerializer(serializers.ModelSerializer):
+    artist_name = serializers.CharField(source='artist.name', read_only=True)
     class Meta:
         model = Album
         fields = '__all__'

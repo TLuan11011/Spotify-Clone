@@ -15,11 +15,14 @@ interface Album {
 
 interface Song {
     id: number;
-    title: string;
+    name: string;
     artist: number;
     album: number | null;
     song_url?: string | null;
+    duration: number;
     status: number;
+    premium: number;
+    lyrics: string;
 }
 
 interface SongFormData {
@@ -28,6 +31,8 @@ interface SongFormData {
     album: number | null;
     audio_file?: File | string | null;
     status: number;
+    premium: number;
+    lyrics: string;
 }
 
 export default function SongManager() {
@@ -40,9 +45,12 @@ export default function SongManager() {
         album: null,
         audio_file: null,
         status: 1,
+        premium: 0,
+        lyrics: "",
     });
     const [editingSongId, setEditingSongId] = useState<number | null>(null);
     const [audioPreview, setAudioPreview] = useState<string | null>(null);
+    const [audioDuration, setAudioDuration] = useState<number>(1); // Default duration
     const [isFormVisible, setIsFormVisible] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -63,17 +71,29 @@ export default function SongManager() {
 
                 const artistsData: Artist[] = await artistsResponse.json();
                 const albumsData: Album[] = await albumsResponse.json();
-                const songsData: Song[] = await songsResponse.json();
+                const songsData: any[] = await songsResponse.json();
 
-                console.log("Artists:", artistsData);
-                console.log("Albums:", albumsData);
-                console.log("Songs:", songsData);
+                // Kiểm tra và chuẩn hóa dữ liệu bài hát
+                const normalizedSongs: Song[] = songsData.map(song => ({
+                    id: song.id,
+                    name: song.name || "Không xác định",
+                    artist: song.artist || 0,
+                    album: song.album || null,
+                    song_url: song.song_url || null,
+                    duration: song.duration || 1,
+                    status: song.status ?? 1,
+                    premium: song.premium !== undefined ? Number(song.premium) : 0,
+                    lyrics: song.lyrics
+                }));
+
+                console.log("Raw Songs Data:", songsData);
+                console.log("Normalized Songs:", normalizedSongs);
 
                 setArtists(artistsData.filter((artist) => artist.status === 1));
                 setAlbums(albumsData.filter((album) => album.status === 1));
-                setSongs(songsData);
+                setSongs(normalizedSongs);
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Lỗi không xác định.");
+                setError(err instanceof Error ? err.message : "Lỗi không xác định khi tải dữ liệu.");
             }
         };
         fetchData();
@@ -85,8 +105,18 @@ export default function SongManager() {
         const { name, value } = e.target;
         setFormData((prev) => ({
             ...prev,
-            [name]: name === "artist" || name === "album" ? (value ? Number(value) : null) : value,
+            [name]: name === "artist" || name === "album" || name === "premium"
+                ? (value ? Number(value) : null) 
+                : value,
         }));
+    };
+
+    const handleInputAreaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value,
+        });
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,6 +128,15 @@ export default function SongManager() {
             }
             setFormData((prev) => ({ ...prev, audio_file: file }));
             setAudioPreview(URL.createObjectURL(file));
+
+            // Calculate duration
+            const audio = new Audio(URL.createObjectURL(file));
+            audio.addEventListener('loadedmetadata', () => {
+                const durationInSeconds = Math.floor(audio.duration);
+                setAudioDuration(durationInSeconds);
+                audio.remove(); // Clean up
+            });
+
             setError(null);
         }
     };
@@ -105,6 +144,7 @@ export default function SongManager() {
     const clearAudioFile = () => {
         setFormData((prev) => ({ ...prev, audio_file: null }));
         setAudioPreview(null);
+        setAudioDuration(1); // Reset duration
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -116,6 +156,10 @@ export default function SongManager() {
         }
         if (!formData.audio_file && !editingSongId) {
             setError("Vui lòng chọn file âm thanh!");
+            return;
+        }
+        if (formData.premium === null || formData.premium === undefined) {
+            setError("Vui lòng chọn loại bài hát (Premium hoặc Không Premium)!");
             return;
         }
 
@@ -130,8 +174,10 @@ export default function SongManager() {
         if (formData.album !== null) {
             formPayload.append("album", String(formData.album));
         }
-        formPayload.append("duration", "1");
+        formPayload.append("duration", String(audioDuration)); // Use calculated duration
         formPayload.append("status", String(formData.status));
+        formPayload.append("premium", String(formData.premium));
+        formPayload.append("lyrics", formData.lyrics);
         if (formData.audio_file instanceof File) {
             formPayload.append("song", formData.audio_file);
         }
@@ -155,28 +201,32 @@ export default function SongManager() {
 
             resetForm();
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Lỗi không xác định.");
+            setError(err instanceof Error ? err.message : "Lỗi không xác định khi lưu bài hát.");
         }
     };
 
     const resetForm = () => {
-        setFormData({ title: "", artist: null, album: null, audio_file: null, status: 1 });
+        setFormData({ title: "", artist: null, album: null, audio_file: null, status: 1, premium: 0, lyrics:"" });
         setEditingSongId(null);
         setAudioPreview(null);
+        setAudioDuration(1); // Reset duration
         setIsFormVisible(false);
         setError(null);
     };
 
     const handleEdit = (song: Song) => {
         setFormData({
-            title: song.title,
-            artist: song.artist,
-            album: song.album,
+            title: song.name || "",
+            artist: song.artist || null,
+            album: song.album || null,
             audio_file: song.song_url || null,
-            status: song.status,
+            status: song.status ?? 1,
+            premium: song.premium !== undefined ? song.premium : 0,
+            lyrics: song.lyrics || "",
         });
         setEditingSongId(song.id);
         setAudioPreview(song.song_url ? `${BASE_URL}/audio/${song.song_url}` : null);
+        setAudioDuration(song.duration); // Set duration for editing
         setIsFormVisible(true);
     };
 
@@ -197,7 +247,7 @@ export default function SongManager() {
                 prev.map((song) => (song.id === id ? updatedSong : song))
             );
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Lỗi không xác định.");
+            setError(err instanceof Error ? err.message : "Lỗi không xác định khi thay đổi trạng thái.");
         }
     };
 
@@ -290,6 +340,42 @@ export default function SongManager() {
                             </div>
 
                             <div>
+                                <label className="block mb-1 font-medium text-gray-300">Loại bài hát</label>
+                                <select
+                                    name="premium"
+                                    value={formData.premium}
+                                    onChange={handleInputChange}
+                                    required
+                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                >
+                                    <option value={0}>Không Premium</option>
+                                    <option value={1}>Premium</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label className="block mb-1 font-medium text-gray-300">Lời bài hát</label>
+                                {/* <input
+                                    type="text"
+                                    name="lyric"
+                                    value={formData.lyrics}
+                                    onChange={handleInputChange}
+                                    required
+                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                    placeholder="Nhập tên bài hát"
+                                /> */}
+                                <textarea
+                                    name="lyrics"
+                                    value={formData.lyrics}
+                                    onChange={handleInputAreaChange}
+                                    required
+                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                    placeholder="Nhập lời bài hát"
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div>
                                 <label className="block mb-1 font-medium text-gray-300">File âm thanh</label>
                                 <div className="relative">
                                     <input
@@ -340,7 +426,6 @@ export default function SongManager() {
                 </div>
             )}
 
-            {/* Bảng không có viền, giống hình 2 */}
             <div className="bg-gray-900 p-8 rounded-xl shadow-lg overflow-hidden">
                 {songs.length > 0 ? (
                     <div className="overflow-x-auto">
@@ -352,6 +437,7 @@ export default function SongManager() {
                                     <th className="p-5 w-1/5">Nghệ sĩ</th>
                                     <th className="p-5 w-1/5">Album</th>
                                     <th className="p-5 w-1/3">File âm thanh</th>
+                                    <th className="p-5 w-24">Loại</th>
                                     <th className="p-5 w-24">Trạng thái</th>
                                     <th className="p-5 w-48 text-center">Hành động</th>
                                 </tr>
@@ -363,7 +449,7 @@ export default function SongManager() {
                                         className="transition-colors duration-200 hover:bg-gray-800/50"
                                     >
                                         <td className="p-5 text-gray-200 font-medium">{song.id}</td>
-                                        <td className="p-5 text-gray-200">{song.title}</td>
+                                        <td className="p-5 text-gray-200">{song.name}</td>
                                         <td className="p-5 text-gray-200">{getArtistName(song.artist)}</td>
                                         <td className="p-5 text-gray-200">{getAlbumName(song.album)}</td>
                                         <td className="p-5">
@@ -374,6 +460,17 @@ export default function SongManager() {
                                             ) : (
                                                 <span className="text-gray-500 italic">Không có file</span>
                                             )}
+                                        </td>
+                                        <td className="p-5">
+                                            <span
+                                                className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
+                                                    song.premium === 1
+                                                        ? "bg-blue-600/20 text-blue-400"
+                                                        : "bg-gray-600/20 text-gray-400"
+                                                }`}
+                                            >
+                                                {song.premium === 1 ? "Premium" : "Không Premium"}
+                                            </span>
                                         </td>
                                         <td className="p-5">
                                             <span

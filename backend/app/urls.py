@@ -1,5 +1,7 @@
 # backend/app/urls.py
 from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
 from .views import (
     get_songs,
     get_playlists,
@@ -27,12 +29,21 @@ from .views import (
     add_song,
     get_messages_between_users,
     send_message,
+    update_song,
+    increment_play_count,
+    get_album_details,
+    get_songs_by_album,
+    get_song_by_id,
 )
 
 urlpatterns = [
     # Songs
     path('api/songs/', get_songs, name='get_songs'),
     path('api/songs/add/', add_song, name='add_song'),
+    path('api/songs/update/<int:song_id>/', update_song, name='update_song'),
+    path('api/songs/<int:song_id>/increment_play_count/', increment_play_count, name='increment_play_count'),
+    path('api/songs/album/<int:album_id>/', get_songs_by_album, name='get_songs_by_album'),
+    path('api/songs/<int:song_id>/', get_song_by_id, name='get_song_by_id'),
     
     # Playlists
     path('api/playlists/', get_playlists, name='get_playlists'),
@@ -51,6 +62,7 @@ urlpatterns = [
     path('api/albums/add/', add_album, name='add_album'),
     path('api/albums/update/<int:album_id>/', update_album, name='update_album'),
     path('api/albums/change/<int:pk>/', change_album_status, name='change_album_status'),
+    path('api/albums/<int:pk>/', get_album_details, name='get-album-details'),
     
     # Nghệ sĩ
     path('api/artists/', get_artists, name='get_artists'),
@@ -70,3 +82,5 @@ urlpatterns = [
     path('api/messages/', get_messages_between_users, name='get_messages_between_users'),
     path('api/send_message/', send_message, name='send_message'),
 ]
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

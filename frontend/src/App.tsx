@@ -1,4 +1,3 @@
-
 // import { useState, useEffect } from "react";
 // import {
 //   BrowserRouter as Router,
@@ -7,12 +6,11 @@
 //   Navigate,
 //   useNavigate,
 // } from "react-router-dom";
-// import { Search } from "lucide-react";
+// import { Search, UserIcon} from "lucide-react";
 // import Sidebar from "./components/Sidebar";
 // import MusicPlayer from "./components/MusicPlayer";
 // import Playlist from "./pages/Playlist";
 // import Home from "./components/Assets/HomeForm/Home";
-// import SleepTimer from "./components/SleepTimer";
 // import AllSongs from "./pages/AllSongs";
 // import AdminPage from "./Admin";
 // import Chat from "./pages/Chat";
@@ -24,8 +22,8 @@
 // import LovedSongs from "./pages/LovedSongs";
 // import UserMenu from "./components/UserMenu";
 // import UserProfile from "./pages/UserProfile";
-// import PremiumSignup from "./pages/PremiumSignup"; // Thêm import
-
+// import UserChangePass from "./pages/UserChangePass";
+// import ViewAlbum from "./pages/ViewAlbum";
 // type MainLayoutProps = {
 //   children: React.ReactNode;
 //   setSearchQuery: (value: string) => void;
@@ -88,10 +86,12 @@
 //               onClick={() => setShowUserMenu(!showUserMenu)}
 //               className="flex items-center gap-2"
 //             >
-//               <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm">
-//                 {isLoggedIn && user
-//                   ? user.username.charAt(0).toUpperCase()
-//                   : "U"}
+//               <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm">
+//                 {isLoggedIn && user ? (
+//                   user.username.charAt(0).toUpperCase()
+//                 ) : (
+//                   <UserIcon size={20} />
+//                 )}
 //               </div>
 //             </button>
 //             {showUserMenu && (
@@ -170,9 +170,10 @@
 //                 setUser={setUser}
 //               >
 //                 <Routes>
-//                   <Route path="/" element={<Home setCurrentSong={() => {}} />} />
+//                   <Route path="/" element={<Home/>} />
 //                   <Route path="/playlist/:id" element={<Playlist />} />
 //                   <Route path="/all_songs" element={<AllSongs />} />
+//                   <Route path="/viewalbum/:id" element={<ViewAlbum />} />
 //                   <Route
 //                     path="/loved"
 //                     element={<LovedSongs setCurrentSong={undefined} />}
@@ -199,13 +200,14 @@
 //                     }
 //                   />
 //                   <Route
-//                     path="/premium-signup"
+//                     path="/changepass"
 //                     element={
 //                       <RequireAuth>
-//                         <PremiumSignup user={user} setUser={setUser} />
+//                         <UserChangePass user={user} setUser={setUser} />
 //                       </RequireAuth>
 //                     }
 //                   />
+
 //                   <Route path="*" element={<Navigate to="/" />} />
 //                 </Routes>
 //               </MainLayout>
@@ -217,7 +219,7 @@
 //   );
 // }
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -225,12 +227,11 @@ import {
   Navigate,
   useNavigate,
 } from "react-router-dom";
-import { Search } from "lucide-react";
+import { Search, UserIcon} from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import MusicPlayer from "./components/MusicPlayer";
 import Playlist from "./pages/Playlist";
 import Home from "./components/Assets/HomeForm/Home";
-import SleepTimer from "./components/SleepTimer";
 import AllSongs from "./pages/AllSongs";
 import AdminPage from "./Admin";
 import Chat from "./pages/Chat";
@@ -242,6 +243,9 @@ import LoginUser from "./pages/LoginUser";
 import LovedSongs from "./pages/LovedSongs";
 import UserMenu from "./components/UserMenu";
 import UserProfile from "./pages/UserProfile";
+import UserChangePass from "./pages/UserChangePass";
+import ViewAlbum from "./pages/ViewAlbum";
+import PremiumSignup from "./pages/PremiumSignup";
 
 type MainLayoutProps = {
   children: React.ReactNode;
@@ -303,12 +307,14 @@ function MainLayout({
           <div className="relative">
             <button
               onClick={() => setShowUserMenu(!showUserMenu)}
-              className="flex items cung gap-2"
+              className="flex items-center gap-2"
             >
-              <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm">
-                {isLoggedIn && user
-                  ? user.username.charAt(0).toUpperCase()
-                  : "U"}
+              <div className="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white text-sm">
+                {isLoggedIn && user ? (
+                  user.username.charAt(0).toUpperCase()
+                ) : (
+                  <UserIcon size={20} />
+                )}
               </div>
             </button>
             {showUserMenu && (
@@ -387,9 +393,10 @@ export function App() {
                 setUser={setUser}
               >
                 <Routes>
-                  <Route path="/" element={<Home setCurrentSong={() => {}} />} />
+                  <Route path="/" element={<Home/>} />
                   <Route path="/playlist/:id" element={<Playlist />} />
                   <Route path="/all_songs" element={<AllSongs />} />
+                  <Route path="/viewalbum/:id" element={<ViewAlbum />} />
                   <Route
                     path="/loved"
                     element={<LovedSongs setCurrentSong={undefined} />}
@@ -414,6 +421,30 @@ export function App() {
                         <UserProfile user={user} setUser={setUser} />
                       </RequireAuth>
                     }
+                  />
+                  <Route
+                    path="/changepass"
+                    element={
+                      <RequireAuth>
+                        <UserChangePass user={user} setUser={setUser} />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/premium"
+                    element={
+                      <RequireAuth>
+                        <PremiumSignup user={user} setUser={setUser} />
+                      </RequireAuth>
+                    }
+                  />
+                  <Route
+                    path="/premium/success"
+                    element={<div>Thanh toán thành công! Đang chuyển hướng...</div>}
+                  />
+                  <Route
+                    path="/premium/cancel"
+                    element={<div>Thanh toán đã bị hủy.</div>}
                   />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>

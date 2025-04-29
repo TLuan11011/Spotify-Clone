@@ -136,6 +136,15 @@ const UserMenu: React.FC<UserMenuProps> = ({
     }
     onClose();
   };
+  
+  const handleUpdatePass = () => {
+    if (!isLoggedIn || !user) {
+      navigate("/");
+    } else {
+      navigate("/changepass");
+    }
+    onClose();
+  };
 
   return (
     <div className="absolute right-4 top-14 w-48 bg-[#282828] rounded-lg shadow-lg p-4 z-50">
@@ -152,6 +161,12 @@ const UserMenu: React.FC<UserMenuProps> = ({
             className="w-full text-left text-sm text-gray-300 hover:text-white py-1"
           >
             Thông tin tài khoản
+          </button>
+          <button
+            onClick={handleUpdatePass}
+            className="w-full text-left text-sm text-gray-300 hover:text-white py-1"
+          >
+            Đổi mật khẩu
           </button>
           <button
             onClick={handleLogout}
