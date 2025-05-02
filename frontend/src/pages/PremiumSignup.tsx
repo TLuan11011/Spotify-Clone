@@ -28,29 +28,81 @@
 //     }
 //   }, [user, navigate]);
 
-//   const handleUpgradeToPremium = async () => {
-//     if (!user) return;
+//   useEffect(() => {
+//     const script = document.createElement("script");
+//     script.src = `https://www.paypal.com/sdk/js?client-id=AY5SLnZXMLzSQwqlHiq1fI3x5HhGR994zmFQqXxUOkFng9WV50Lg3hZerAv9pa5NFvmgLliOqTTowgmW&currency=USD`;
+//     script.async = true;
+//     script.onload = () => {
+//       if (window.paypal) {
+//         window.paypal
+//           .Buttons({
+//             createOrder: async () => {
+//               try {
+//                 const response = await axios.post(
+//                   "http://localhost:8000/api/paypal/create/",
+//                   {},
+//                   {
+//                     headers: {
+//                       "Content-Type": "application/json",
+//                     },
+//                     withCredentials: true,
+//                   }
+//                 );
+//                 const orderId = response.data.approval_url.split("token=")[1];
+//                 if (!orderId) {
+//                   throw new Error("Không nhận được order ID từ server");
+//                 }
+//                 return orderId;
+//               } catch (err: any) {
+//                 const errorMessage = err.response?.status === 404
+//                   ? "Không tìm thấy endpoint thanh toán. Vui lòng kiểm tra backend."
+//                   : err.response?.data?.error || err.message || "Lỗi không xác định";
+//                 setError("Không thể tạo thanh toán: " + errorMessage);
+//                 throw new Error(errorMessage);
+//               }
+//             },
+//             onApprove: async (data: { orderID: string; payerID: string }) => {
+//               try {
+//                 const response = await axios.post(
+//                   "http://localhost:8000/api/paypal/execute/",
+//                   { paymentId: data.orderID, PayerID: data.payerID },
+//                   { 
+//                     headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//                     withCredentials: true,
+//                   }
+//                 );
+//                 if (response.data.status === "success") {
+//                   const updatedUser = { ...user!, isPremium: true };
+//                   setUser(updatedUser);
+//                   localStorage.setItem("user", JSON.stringify(updatedUser));
+//                   setSuccess("Đăng ký Premium thành công! Bạn sẽ được chuyển hướng...");
+//                   setTimeout(() => navigate("/profile"), 2000);
+//                 }
+//               } catch (err: any) {
+//                 setError("Thanh toán thất bại: " + (err.response?.data?.error || err.message));
+//               }
+//             },
+//             onCancel: () => {
+//               setError("Thanh toán đã bị hủy.");
+//             },
+//             onError: (err: any) => {
+//               setError("Đã xảy ra lỗi với PayPal: " + err.message);
+//             },
+//           })
+//           .render("#paypal-button-container");
+//       } else {
+//         setError("Không thể tải PayPal SDK. Vui lòng thử lại.");
+//       }
+//     };
+//     script.onerror = () => {
+//       setError("Không thể tải PayPal SDK. Vui lòng kiểm tra kết nối mạng hoặc Client ID.");
+//     };
+//     document.body.appendChild(script);
 
-//     try {
-//       const response = await axios.put(
-//         `http://localhost:8000/api/users/${user.id}/`,
-//         {
-//           isPremium: true,
-//         }
-//       );
-//       const updatedUser = response.data;
-//       updatedUser.isPremium = Number(updatedUser.isPremium) === 1; // Chuyển đổi 0/1 thành false/true
-//       setUser(updatedUser);
-//       localStorage.setItem("user", JSON.stringify(updatedUser));
-//       setSuccess("Đăng ký Premium thành công! Bạn sẽ được chuyển hướng...");
-//       setTimeout(() => navigate("/profile"), 2000); // Chuyển hướng sau 2 giây
-//     } catch (err: any) {
-//       setError(
-//         err.response?.data?.error ||
-//           "Đã xảy ra lỗi khi đăng ký Premium. Vui lòng thử lại."
-//       );
-//     }
-//   };
+//     return () => {
+//       document.body.removeChild(script);
+//     };
+//   }, [navigate, user, setUser]);
 
 //   if (!user) return null;
 
@@ -71,12 +123,7 @@
 //               <li>Truy cập nội dung độc quyền</li>
 //             </ul>
 //           </div>
-//           <button
-//             onClick={handleUpgradeToPremium}
-//             className="w-full py-3 bg-[#1DB954] text-black font-semibold rounded-full hover:bg-[#1ED760] transition-all"
-//           >
-//             Đăng ký Premium
-//           </button>
+//           <div id="paypal-button-container"></div>
 //           <button
 //             onClick={() => navigate("/profile")}
 //             className="w-full py-3 bg-gray-600 text-white font-semibold rounded-full hover:bg-gray-500 transition-all mt-2"
@@ -90,7 +137,6 @@
 // };
 
 // export default PremiumSignup;
-
 
 import React, { useState, useEffect } from "react";
 import axios from "axios";
@@ -122,81 +168,57 @@ const PremiumSignup: React.FC<PremiumSignupProps> = ({ user, setUser }) => {
     }
   }, [user, navigate]);
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = `https://www.paypal.com/sdk/js?client-id=AY5SLnZXMLzSQwqlHiq1fI3x5HhGR994zmFQqXxUOkFng9WV50Lg3hZerAv9pa5NFvmgLliOqTTowgmW&currency=USD`;
-    script.async = true;
-    script.onload = () => {
-      if (window.paypal) {
-        window.paypal
-          .Buttons({
-            createOrder: async () => {
-              try {
-                const response = await axios.post(
-                  "http://localhost:8000/api/paypal/create/",
-                  {},
-                  {
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    withCredentials: true,
-                  }
-                );
-                const orderId = response.data.approval_url.split("token=")[1];
-                if (!orderId) {
-                  throw new Error("Không nhận được order ID từ server");
-                }
-                return orderId;
-              } catch (err: any) {
-                const errorMessage = err.response?.status === 404
-                  ? "Không tìm thấy endpoint thanh toán. Vui lòng kiểm tra backend."
-                  : err.response?.data?.error || err.message || "Lỗi không xác định";
-                setError("Không thể tạo thanh toán: " + errorMessage);
-                throw new Error(errorMessage);
-              }
-            },
-            onApprove: async (data: { orderID: string; payerID: string }) => {
-              try {
-                const response = await axios.post(
-                  "http://localhost:8000/api/paypal/execute/",
-                  { paymentId: data.orderID, PayerID: data.payerID },
-                  { 
-                    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-                    withCredentials: true,
-                  }
-                );
-                if (response.data.status === "success") {
-                  const updatedUser = { ...user!, isPremium: true };
-                  setUser(updatedUser);
-                  localStorage.setItem("user", JSON.stringify(updatedUser));
-                  setSuccess("Đăng ký Premium thành công! Bạn sẽ được chuyển hướng...");
-                  setTimeout(() => navigate("/profile"), 2000);
-                }
-              } catch (err: any) {
-                setError("Thanh toán thất bại: " + (err.response?.data?.error || err.message));
-              }
-            },
-            onCancel: () => {
-              setError("Thanh toán đã bị hủy.");
-            },
-            onError: (err: any) => {
-              setError("Đã xảy ra lỗi với PayPal: " + err.message);
-            },
-          })
-          .render("#paypal-button-container");
-      } else {
-        setError("Không thể tải PayPal SDK. Vui lòng thử lại.");
-      }
-    };
-    script.onerror = () => {
-      setError("Không thể tải PayPal SDK. Vui lòng kiểm tra kết nối mạng hoặc Client ID.");
-    };
-    document.body.appendChild(script);
+  const handleVnpayPayment = async () => {
+    if (!user) {
+      setError("Vui lòng đăng nhập để tiếp tục");
+      return;
+    }
 
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, [navigate, user, setUser]);
+    try {
+      const response = await axios.post(
+        "http://localhost:8000/api/vnpay/create/",
+        { user_id: user.id },
+        {
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
+        }
+      );
+      const paymentUrl = response.data.payment_url;
+      if (paymentUrl) {
+        window.location.href = paymentUrl;
+      } else {
+        throw new Error("Không nhận được URL thanh toán từ server");
+      }
+    } catch (err: any) {
+      setError("Không thể tạo thanh toán: " + (err.response?.data?.error || err.message));
+    }
+  };
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get("vnp_ResponseCode")) {
+      if (query.get("vnp_ResponseCode") === "00") {
+        setSuccess("Đăng ký Premium thành công! Bạn sẽ được chuyển hướng...");
+        setTimeout(async () => {
+          try {
+            const response = await axios.get("http://localhost:8000/api/vnpay/return/", {
+              params: Object.fromEntries(query),
+              withCredentials: true,
+            });
+            if (response.data.status === "success") {
+              setUser(response.data.user);
+              localStorage.setItem("user", JSON.stringify(response.data.user));
+              navigate("/profile");
+            }
+          } catch (err: any) {
+            setError("Lỗi khi xử lý callback: " + (err.response?.data?.error || err.message));
+          }
+        }, 2000);
+      } else {
+        setError("Thanh toán thất bại hoặc bị hủy.");
+      }
+    }
+  }, [navigate, setUser]);
 
   if (!user) return null;
 
@@ -217,7 +239,12 @@ const PremiumSignup: React.FC<PremiumSignupProps> = ({ user, setUser }) => {
               <li>Truy cập nội dung độc quyền</li>
             </ul>
           </div>
-          <div id="paypal-button-container"></div>
+          <button
+            onClick={handleVnpayPayment}
+            className="w-full py-3 bg-[#1DB954] text-black font-semibold rounded-full hover:bg-[#1ED760] transition-all"
+          >
+            Đăng ký ngay
+          </button>
           <button
             onClick={() => navigate("/profile")}
             className="w-full py-3 bg-gray-600 text-white font-semibold rounded-full hover:bg-gray-500 transition-all mt-2"

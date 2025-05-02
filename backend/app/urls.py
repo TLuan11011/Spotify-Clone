@@ -3,6 +3,7 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from .views import (
+    create_vnpay_payment,
     get_songs,
     get_playlists,
     get_playlist,
@@ -34,6 +35,7 @@ from .views import (
     get_album_details,
     get_songs_by_album,
     get_song_by_id,
+    vnpay_return,
 )
 
 urlpatterns = [
@@ -81,6 +83,9 @@ urlpatterns = [
     #message
     path('api/messages/', get_messages_between_users, name='get_messages_between_users'),
     path('api/send_message/', send_message, name='send_message'),
+
+    path('api/vnpay/create/', create_vnpay_payment, name='create_vnpay_payment'),
+    path('api/vnpay/return/', vnpay_return, name='vnpay_return'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -32,5 +32,4 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('app.urls')),  # Bao gồm các URL từ app
-    path('api/paypal/', include('payments.urls')),
 ]

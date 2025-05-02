@@ -1,4 +1,4 @@
-// import { useState, useEffect } from "react";
+// import { useState } from "react";
 // import {
 //   BrowserRouter as Router,
 //   Routes,
@@ -6,7 +6,7 @@
 //   Navigate,
 //   useNavigate,
 // } from "react-router-dom";
-// import { Search, UserIcon} from "lucide-react";
+// import { Search, UserIcon } from "lucide-react";
 // import Sidebar from "./components/Sidebar";
 // import MusicPlayer from "./components/MusicPlayer";
 // import Playlist from "./pages/Playlist";
@@ -24,6 +24,8 @@
 // import UserProfile from "./pages/UserProfile";
 // import UserChangePass from "./pages/UserChangePass";
 // import ViewAlbum from "./pages/ViewAlbum";
+// import PremiumSignup from "./pages/PremiumSignup";
+
 // type MainLayoutProps = {
 //   children: React.ReactNode;
 //   setSearchQuery: (value: string) => void;
@@ -32,7 +34,13 @@
 //   showSleepTimer: boolean;
 //   isLoggedIn: boolean;
 //   setIsLoggedIn: React.Dispatch<React.SetStateAction<boolean>>;
-//   user: { id: number; username: string; email: string; created_at?: string; isPremium?: boolean } | null;
+//   user: {
+//     id: number;
+//     username: string;
+//     email: string;
+//     created_at?: string;
+//     isPremium?: boolean;
+//   } | null;
 //   setUser: React.Dispatch<
 //     React.SetStateAction<{
 //       id: number;
@@ -170,7 +178,7 @@
 //                 setUser={setUser}
 //               >
 //                 <Routes>
-//                   <Route path="/" element={<Home/>} />
+//                   <Route path="/" element={<Home />} />
 //                   <Route path="/playlist/:id" element={<Playlist />} />
 //                   <Route path="/all_songs" element={<AllSongs />} />
 //                   <Route path="/viewalbum/:id" element={<ViewAlbum />} />
@@ -207,7 +215,28 @@
 //                       </RequireAuth>
 //                     }
 //                   />
-
+//                   <Route
+//                     path="/premium"
+//                     element={
+//                       <RequireAuth>
+//                         <PremiumSignup user={user} setUser={setUser} />
+//                       </RequireAuth>
+//                     }
+//                   />
+//                   <Route
+//                     path="/premium/success"
+//                     element={
+//                       <div>Thanh toán thành công! Đang chuyển hướng...</div>
+//                     }
+//                   />
+//                   <Route
+//                     path="/premium/cancel"
+//                     element={<div>Thanh toán đã bị hủy.</div>}
+//                   />
+//                   <Route
+//                     path="/premium/vnpay_return"
+//                     element={<PremiumSignup user={user} setUser={setUser} />}
+//                   />
 //                   <Route path="*" element={<Navigate to="/" />} />
 //                 </Routes>
 //               </MainLayout>
@@ -219,6 +248,7 @@
 //   );
 // }
 
+
 import { useState } from "react";
 import {
   BrowserRouter as Router,
@@ -227,7 +257,7 @@ import {
   Navigate,
   useNavigate,
 } from "react-router-dom";
-import { Search, UserIcon} from "lucide-react";
+import { Search, UserIcon } from "lucide-react";
 import Sidebar from "./components/Sidebar";
 import MusicPlayer from "./components/MusicPlayer";
 import Playlist from "./pages/Playlist";
@@ -393,7 +423,7 @@ export function App() {
                 setUser={setUser}
               >
                 <Routes>
-                  <Route path="/" element={<Home/>} />
+                  <Route path="/" element={<Home />} />
                   <Route path="/playlist/:id" element={<Playlist />} />
                   <Route path="/all_songs" element={<AllSongs />} />
                   <Route path="/viewalbum/:id" element={<ViewAlbum />} />
@@ -439,12 +469,8 @@ export function App() {
                     }
                   />
                   <Route
-                    path="/premium/success"
-                    element={<div>Thanh toán thành công! Đang chuyển hướng...</div>}
-                  />
-                  <Route
-                    path="/premium/cancel"
-                    element={<div>Thanh toán đã bị hủy.</div>}
+                    path="/premium/vnpay_return"
+                    element={<PremiumSignup user={user} setUser={setUser} />}
                   />
                   <Route path="*" element={<Navigate to="/" />} />
                 </Routes>
