@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useRef, ReactNode, useEffect } from "react";
+import React, { createContext, useContext, useState, useRef, ReactNode, useEffect } from "react";
 
 type Song = {
   id: number;
@@ -45,10 +45,10 @@ export const AudioProvider = ({ children }: { children: ReactNode }) => {
   const [playbackHistory, setPlaybackHistory] = useState<Song[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  // Gắn các sự kiện audio để cập nhật trạng thái
+  // Gắn các sự kiện audio để cập nhật trạng thái (chỉ cho audio)
   useEffect(() => {
     const audio = audioRef.current;
-    if (!audio) return;
+    if (!audio || currentSong?.song_url.endsWith(".mp4")) return;
 
     const updateTime = () => setCurrentTime(audio.currentTime);
     const updateDuration = () => setDuration(audio.duration || 0);
@@ -109,24 +109,33 @@ export const AudioProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const audio = audioRef.current;
-    const audioUrl = `http://127.0.0.1:8000/audio/${song.song_url}`;
-    console.log("Playing audio URL:", audioUrl); // Debug URL
+    const isVideo = song.song_url.endsWith(".mp4");
 
     try {
+      // Pause and clear audio for any new song to prevent overlap
+      audio.pause();
+      audio.src = "";
+      setIsPlaying(false);
+
       if (currentSong?.id === song.id) {
         if (isPlaying) {
-          audio.pause();
           setIsPlaying(false);
         } else {
-          await audio.play();
+          if (!isVideo) {
+            const audioUrl = `http://127.0.0.1:8000/audio/${song.song_url}`;
+            audio.src = audioUrl;
+            await audio.play();
+          }
           setIsPlaying(true);
         }
       } else {
-        audio.pause();
         setCurrentSong(song);
         setPlaybackHistory((prev) => [...prev, song].slice(-10));
-        audio.src = audioUrl;
-        await audio.play();
+        if (!isVideo) {
+          const audioUrl = `http://127.0.0.1:8000/audio/${song.song_url}`;
+          audio.src = audioUrl;
+          await audio.play();
+        }
         setIsPlaying(true);
       }
     } catch (error) {
@@ -136,7 +145,7 @@ export const AudioProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const togglePlayPause = async () => {
-    if (!audioRef.current || !currentSong) return;
+    if (!currentSong) return;
 
     if (currentSong.premium === 1) {
       const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -147,12 +156,19 @@ export const AudioProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
+    const audio = audioRef.current;
+    const isVideo = currentSong.song_url.endsWith(".mp4");
+
     try {
       if (isPlaying) {
-        audioRef.current.pause();
+        if (!isVideo && audio) {
+          audio.pause();
+        }
         setIsPlaying(false);
       } else {
-        await audioRef.current.play();
+        if (!isVideo && audio) {
+          await audio.play();
+        }
         setIsPlaying(true);
       }
     } catch (error) {
@@ -170,10 +186,10 @@ export const AudioProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const seek = (time: number) => {
-    if (audioRef.current) {
+    if (audioRef.current && !currentSong?.song_url.endsWith(".mp4")) {
       audioRef.current.currentTime = time;
-      setCurrentTime(time);
     }
+    setCurrentTime(time);
   };
 
   return (

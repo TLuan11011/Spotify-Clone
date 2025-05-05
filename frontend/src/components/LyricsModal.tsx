@@ -136,7 +136,7 @@ const LyricsModal: React.FC<LyricsModalProps> = ({ songId, onClose }) => {
                                             strokeLinecap="round"
                                             strokeLinejoin="round"
                                             strokeWidth={2}
-                                            d="M6 18L18 6M6 6l12 12"
+                                            d="M4 8V4h4M4 16v4h4M16 4h4v4M16 20h4v-4"
                                         />
                                     </svg>
                                 ) : (

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef} from "react";
 import { useAudio } from "../AudioContext";
 import {
   PlayIcon,
@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import SleepTimer from "./SleepTimer";
 import LyricsModal from "./LyricsModal";
+import Playvideo from "./Playvideo";
 
 const MusicPlayer: React.FC = () => {
   const {
@@ -33,29 +34,38 @@ const MusicPlayer: React.FC = () => {
   const [volume, setVolume] = useState(() => {
     return Number(localStorage.getItem("volume")) || 0.75;
   });
-  const [originalSongList, setOriginalSongList] = useState(songList);
+  const [originalSongList, setOriginalSongList] = useState<typeof songList>([]);
   const [showSleepTimer, setShowSleepTimer] = useState(false);
-  const [showLyric, setShowLyric] = useState(false)
+  const [showLyric, setShowLyric] = useState(false);
   const [timerRemaining, setTimerRemaining] = useState<number | null>(null);
 
-  // Lưu âm lượng vào localStorage và cập nhật audio
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Khởi tạo originalSongList khi songList thay đổi
   useEffect(() => {
+    if (songList.length > 0 && originalSongList.length === 0) {
+      setOriginalSongList(songList);
+    }
+  }, [songList, originalSongList]);
+
+  // Lưu âm lượng vào localStorage và cập nhật audio (chỉ cho audio)
+  useEffect(() => {
+    if (currentSong?.song_url.endsWith(".mp4")) return;
     localStorage.setItem("volume", volume.toString());
     const audio = document.querySelector("audio");
     if (audio) {
       audio.volume = volume;
     }
-  }, [volume]);
+  }, [volume, currentSong]);
 
-  // Xử lý khi bài hát kết thúc
+  // Xử lý khi bài hát kết thúc (chỉ cho audio)
   useEffect(() => {
     const audio = document.querySelector("audio");
-    if (!audio) {
+    if (!audio || currentSong?.song_url.endsWith(".mp4")) {
       return;
     }
 
     const handleEnded = () => {
-      console.log("Song ended, repeatMode:", repeatMode); // Debug
       if (repeatMode === "one") {
         seek(0);
         audio.play().catch((err) => console.error("Error replaying song:", err));
@@ -80,52 +90,70 @@ const MusicPlayer: React.FC = () => {
   }, [currentSong, repeatMode, songList, playNext, seek, togglePlayPause]);
 
   // Đếm ngược thời gian hẹn giờ
+  // useEffect(() => {
+  //   let intervalId: NodeJS.Timeout | null = null;
+  //   if (timerRemaining !== null && timerRemaining > 0) {
+  //     intervalId = setInterval(() => {
+  //       setTimerRemaining((prev) => (prev !== null ? prev - 1 : prev));
+  //     }, 1000);
+  //   } else if (timerRemaining === 0) {
+  //     togglePlayPause();
+  //     setTimerRemaining(null);
+  //   }
+  //   return () => {
+  //     if (intervalId) clearInterval(intervalId);
+  //   };
+  // }, [timerRemaining, togglePlayPause]);
+
   useEffect(() => {
-    let intervalId: NodeJS.Timeout | null = null;
-    if (timerRemaining !== null && timerRemaining > 0) {
-      intervalId = setInterval(() => {
-        setTimerRemaining((prev) => (prev !== null ? prev - 1 : prev));
+    if (timerRemaining !== null && timerRef.current === null) {
+      timerRef.current = setInterval(() => {
+        setTimerRemaining((prev) => {
+          if (prev === null || prev <= 1) {
+            clearInterval(timerRef.current!);
+            timerRef.current = null;
+            togglePlayPause();
+            return null;
+          }
+          return prev - 1;
+        });
       }, 1000);
-    } else if (timerRemaining === 0) {
-      togglePlayPause(); // Tạm dừng khi hẹn giờ hết
-      setTimerRemaining(null);
     }
+  
     return () => {
-      if (intervalId) clearInterval(intervalId);
+      if (timerRef.current && timerRemaining === null) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
   }, [timerRemaining, togglePlayPause]);
 
-  // Hàm xử lý khi thiết lập hẹn giờ
   const handleTimerSet = (minutes: number) => {
     setTimerRemaining(minutes * 60);
   };
 
-  // Hàm xử lý khi dừng hẹn giờ
   const handleTimerStop = () => {
     setTimerRemaining(null);
   };
 
-  // Hàm xử lý shuffle
   const handleShuffle = useCallback(() => {
     if (!isShuffled) {
-      setOriginalSongList(songList);
+      setOriginalSongList([...songList]);
       const shuffledList = [...songList].sort(() => Math.random() - 0.5);
       setSongList(shuffledList);
       setIsShuffled(true);
     } else {
-      setSongList(originalSongList);
+      setSongList([...originalSongList]);
       setIsShuffled(false);
     }
-  }, [isShuffled, songList, setSongList, originalSongList]);
+  }, [isShuffled, songList, originalSongList, setSongList]);
 
-  // Hàm xử lý lặp lại
   const handleRepeat = useCallback(() => {
     setRepeatMode((prev) =>
       prev === "off" ? "all" : prev === "all" ? "one" : "off"
     );
   }, []);
 
-  // Hàm xử lý tua bài hát
   const handleSeek = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
       if (duration) {
@@ -138,7 +166,6 @@ const MusicPlayer: React.FC = () => {
     [duration, seek]
   );
 
-  // Hàm xử lý thay đổi âm lượng
   const handleVolumeChange = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const clickPosition = (e.clientX - rect.left) / rect.width;
@@ -146,14 +173,13 @@ const MusicPlayer: React.FC = () => {
     setVolume(newVolume);
   }, []);
 
-  // Định dạng thời gian (MM:SS)
   const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
     const minutes = Math.floor(time / 60);
     const seconds = Math.floor(time % 60);
     return `${minutes}:${seconds < 10 ? "0" + seconds : seconds}`;
   };
 
-  // Định dạng thời gian đếm ngược
   const formatTimer = (seconds: number | null) => {
     if (seconds === null) return "";
     return formatTime(seconds);
@@ -161,12 +187,24 @@ const MusicPlayer: React.FC = () => {
 
   if (!currentSong) return null;
 
+  if (currentSong.song_url.endsWith(".mp4")) {
+    return (
+      <Playvideo
+        songId={currentSong.id}
+        onClose={() => {
+          togglePlayPause();
+          playNext();
+        }}
+      />
+    );
+  }
+
   return (
     <div className="h-20 bg-[#181818] border-t border-[#282828] px-4 flex items-center text-white relative">
       {/* Thông tin bài hát */}
       <div className="w-1/4 flex items-center gap-3">
         <img
-          src={currentSong.image_url}
+          src={currentSong.image_url || "/default-cover.png"}
           alt={currentSong.name}
           className="h-12 w-12 rounded object-cover"
           loading="lazy"
@@ -175,8 +213,12 @@ const MusicPlayer: React.FC = () => {
           }}
         />
         <div>
-          <h4 className="text-sm font-medium">{currentSong.name}</h4>
-          <p className="text-xs text-gray-400">{currentSong.artist}</p>
+          <h4 className="text-sm font-medium truncate max-w-[150px]">
+            {currentSong.name}
+          </h4>
+          <p className="text-xs text-gray-400 truncate max-w-[150px]">
+            {currentSong.artist}
+          </p>
         </div>
       </div>
 
@@ -224,14 +266,18 @@ const MusicPlayer: React.FC = () => {
           </button>
         </div>
         <div className="w-full mt-2 flex items-center gap-3">
-          <span className="text-xs text-gray-400">{formatTime(currentTime)}</span>
+          <span className="text-xs text-gray-400">
+            {formatTime(currentTime)}
+          </span>
           <div
             className="flex-1 h-1 bg-[#282828] rounded-full cursor-pointer"
             onClick={handleSeek}
           >
             <div
               className="h-full bg-white rounded-full transition-all"
-              style={{ width: `${(currentTime / duration) * 100}%` }}
+              style={{
+                width: `${duration ? (currentTime / duration) * 100 : 0}%`,
+              }}
             />
           </div>
           <span className="text-xs text-gray-400">{formatTime(duration)}</span>
@@ -240,28 +286,23 @@ const MusicPlayer: React.FC = () => {
 
       {/* Điều khiển âm lượng và hẹn giờ */}
       <div className="w-1/4 flex justify-end items-center gap-2">
-      <div className="flex items-center gap-1">
-          <button
-            onClick={() => setShowLyric(true)}
-            className="text-gray-400 hover:text-white transition"
-          >
-            <MicIcon size={18} />
-          </button>
-          {timerRemaining !== null && (
-            <span className="text-xs text-gray-400">{formatTimer(timerRemaining)}</span>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowSleepTimer(true)}
-            className="text-gray-400 hover:text-white transition"
-          >
-            <ClockIcon size={18} />
-          </button>
-          {timerRemaining !== null && (
-            <span className="text-xs text-gray-400">{formatTimer(timerRemaining)}</span>
-          )}
-        </div>
+        <button
+          onClick={() => setShowLyric(true)}
+          className="text-gray-400 hover:text-white transition"
+        >
+          <MicIcon size={18} />
+        </button>
+        <button
+          onClick={() => setShowSleepTimer(true)}
+          className="text-gray-400 hover:text-white transition"
+        >
+          <ClockIcon size={18} />
+        </button>
+        {timerRemaining !== null && (
+          <span className="text-xs text-gray-400">
+            {formatTimer(timerRemaining)}
+          </span>
+        )}
         <div className="flex items-center gap-3">
           <VolumeIcon size={16} className="text-gray-400" />
           <div
@@ -286,7 +327,7 @@ const MusicPlayer: React.FC = () => {
 
       {showLyric && (
         <LyricsModal
-          songId={currentSong?.id || 0}
+          songId={currentSong.id}
           onClose={() => setShowLyric(false)}
         />
       )}

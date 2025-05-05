@@ -36,6 +36,7 @@ from .views import (
     get_songs_by_album,
     get_song_by_id,
     vnpay_return,
+    change_password
 )
 
 urlpatterns = [
@@ -79,6 +80,7 @@ urlpatterns = [
     path('api/users/login/', login_user, name='login_user'),
     path('api/delete-user/<int:pk>/', delete_user, name='delete_user'),
     path('api/users/<int:pk>/toggle-status/', changestatus_user, name='changestatus_user'),
+    path('api/change-password/<int:pk>/', change_password, name='change_password'),
 
     #message
     path('api/messages/', get_messages_between_users, name='get_messages_between_users'),

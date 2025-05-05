@@ -53,6 +53,7 @@ export default function SongManager() {
     const [audioDuration, setAudioDuration] = useState<number>(1); // Default duration
     const [isFormVisible, setIsFormVisible] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [isVideo, setIsVideo] = useState<boolean>(false); // Track if the uploaded file is a video
 
     const BASE_URL = "http://127.0.0.1:8000";
 
@@ -122,19 +123,21 @@ export default function SongManager() {
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (file) {
-            if (!file.type.startsWith("audio/")) {
-                setError("Vui lòng chọn file âm thanh (mp3, wav, v.v.)!");
+            if (!file.type.startsWith("audio/") && file.type !== "video/mp4") {
+                setError("Vui lòng chọn file âm thanh (mp3, wav, v.v.) hoặc video (mp4)!");
                 return;
             }
             setFormData((prev) => ({ ...prev, audio_file: file }));
             setAudioPreview(URL.createObjectURL(file));
+            setIsVideo(file.type === "video/mp4");
 
             // Calculate duration
-            const audio = new Audio(URL.createObjectURL(file));
-            audio.addEventListener('loadedmetadata', () => {
-                const durationInSeconds = Math.floor(audio.duration);
+            const mediaElement = file.type.startsWith("audio/") ? new Audio() : document.createElement("video");
+            mediaElement.src = URL.createObjectURL(file);
+            mediaElement.addEventListener('loadedmetadata', () => {
+                const durationInSeconds = Math.floor(mediaElement.duration);
                 setAudioDuration(durationInSeconds);
-                audio.remove(); // Clean up
+                mediaElement.remove(); // Clean up
             });
 
             setError(null);
@@ -145,6 +148,7 @@ export default function SongManager() {
         setFormData((prev) => ({ ...prev, audio_file: null }));
         setAudioPreview(null);
         setAudioDuration(1); // Reset duration
+        setIsVideo(false);
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -155,7 +159,7 @@ export default function SongManager() {
             return;
         }
         if (!formData.audio_file && !editingSongId) {
-            setError("Vui lòng chọn file âm thanh!");
+            setError("Vui lòng chọn file âm thanh hoặc video!");
             return;
         }
         if (formData.premium === null || formData.premium === undefined) {
@@ -206,10 +210,11 @@ export default function SongManager() {
     };
 
     const resetForm = () => {
-        setFormData({ title: "", artist: null, album: null, audio_file: null, status: 1, premium: 0, lyrics:"" });
+        setFormData({ title: "", artist: null, album: null, audio_file: null, status: 1, premium: 0, lyrics: "" });
         setEditingSongId(null);
         setAudioPreview(null);
         setAudioDuration(1); // Reset duration
+        setIsVideo(false);
         setIsFormVisible(false);
         setError(null);
     };
@@ -227,6 +232,7 @@ export default function SongManager() {
         setEditingSongId(song.id);
         setAudioPreview(song.song_url ? `${BASE_URL}/audio/${song.song_url}` : null);
         setAudioDuration(song.duration); // Set duration for editing
+        setIsVideo(song.song_url?.endsWith(".mp4") || false);
         setIsFormVisible(true);
     };
 
@@ -285,145 +291,143 @@ export default function SongManager() {
 
             {isFormVisible && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
-                    <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-lg">
-                        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-                            {editingSongId ? <Edit size={20} /> : <Plus size={20} />}
-                            {editingSongId ? "Sửa bài hát" : "Thêm bài hát mới"}
-                        </h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div>
-                                <label className="block mb-1 font-medium text-gray-300">Tên bài hát</label>
+                <div className="bg-gray-900 p-6 rounded-xl w-full max-w-md shadow-lg max-h-[90vh] overflow-y-auto">
+                    <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
+                        {editingSongId ? <Edit size={20} /> : <Plus size={20} />}
+                        {editingSongId ? "Sửa bài hát" : "Thêm bài hát mới"}
+                    </h2>
+                    <form onSubmit={handleSubmit} className="space-y-4">
+                        <div>
+                            <label className="block mb-1 font-medium text-gray-300">Tên bài hát</label>
+                            <input
+                                type="text"
+                                name="title"
+                                value={formData.title}
+                                onChange={handleInputChange}
+                                required
+                                className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                placeholder="Nhập tên bài hát"
+                            />
+                        </div>
+            
+                        <div>
+                            <label className="block mb-1 font-medium text-gray-300">Nghệ sĩ</label>
+                            <select
+                                name="artist"
+                                value={formData.artist ?? ""}
+                                onChange={handleInputChange}
+                                required
+                                className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                            >
+                                <option value="" disabled>Chọn nghệ sĩ</option>
+                                {artists.map((artist) => (
+                                    <option key={artist.id} value={artist.id}>
+                                        {artist.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+            
+                        <div>
+                            <label className="block mb-1 font-medium text-gray-300">Album</label>
+                            <select
+                                name="album"
+                                value={formData.album ?? ""}
+                                onChange={handleInputChange}
+                                className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                            >
+                                <option value="">Không có album</option>
+                                {albums.map((album) => (
+                                    <option key={album.id} value={album.id}>
+                                        {album.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+            
+                        <div>
+                            <label className="block mb-1 font-medium text-gray-300">Loại bài hát</label>
+                            <select
+                                name="premium"
+                                value={formData.premium}
+                                onChange={handleInputChange}
+                                required
+                                className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                            >
+                                <option value={0}>Không Premium</option>
+                                <option value={1}>Premium</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label className="block mb-1 font-medium text-gray-300">Lời bài hát</label>
+                            <textarea
+                                name="lyrics"
+                                value={formData.lyrics}
+                                onChange={handleInputAreaChange}
+                                className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
+                                placeholder="Nhập lời bài hát"
+                                rows={3}
+                            />
+                        </div>
+            
+                        <div>
+                            <label className="block mb-1 font-medium text-gray-300">File âm thanh hoặc video</label>
+                            <div className="relative">
                                 <input
-                                    type="text"
-                                    name="title"
-                                    value={formData.title}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                    placeholder="Nhập tên bài hát"
+                                    type="file"
+                                    accept="audio/*,video/mp4"
+                                    onChange={handleFileChange}
+                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-white file:mr-4 file:py-1 file:px-3 file:bg-green-600 file:text-white file:rounded-md file:border-0 hover:file:bg-green-500"
                                 />
-                            </div>
-
-                            <div>
-                                <label className="block mb-1 font-medium text-gray-300">Nghệ sĩ</label>
-                                <select
-                                    name="artist"
-                                    value={formData.artist ?? ""}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                >
-                                    <option value="" disabled>Chọn nghệ sĩ</option>
-                                    {artists.map((artist) => (
-                                        <option key={artist.id} value={artist.id}>
-                                            {artist.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block mb-1 font-medium text-gray-300">Album</label>
-                                <select
-                                    name="album"
-                                    value={formData.album ?? ""}
-                                    onChange={handleInputChange}
-                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                >
-                                    <option value="">Không có album</option>
-                                    {albums.map((album) => (
-                                        <option key={album.id} value={album.id}>
-                                            {album.name}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block mb-1 font-medium text-gray-300">Loại bài hát</label>
-                                <select
-                                    name="premium"
-                                    value={formData.premium}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                >
-                                    <option value={0}>Không Premium</option>
-                                    <option value={1}>Premium</option>
-                                </select>
-                            </div>
-                            
-                            <div>
-                                <label className="block mb-1 font-medium text-gray-300">Lời bài hát</label>
-                                {/* <input
-                                    type="text"
-                                    name="lyric"
-                                    value={formData.lyrics}
-                                    onChange={handleInputChange}
-                                    required
-                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                    placeholder="Nhập tên bài hát"
-                                /> */}
-                                <textarea
-                                    name="lyrics"
-                                    value={formData.lyrics}
-                                    onChange={handleInputAreaChange}
-                                    required
-                                    className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-green-500 focus:outline-none"
-                                    placeholder="Nhập lời bài hát"
-                                    rows={3}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block mb-1 font-medium text-gray-300">File âm thanh</label>
-                                <div className="relative">
-                                    <input
-                                        type="file"
-                                        accept="audio/*"
-                                        onChange={handleFileChange}
-                                        className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-white file:mr-4 file:py-1 file:px-3 file:bg-green-600 file:text-white file:rounded-md file:border-0 hover:file:bg-green-500"
-                                    />
-                                    {(audioPreview || (editingSongId && formData.audio_file)) && (
-                                        <button
-                                            type="button"
-                                            onClick={clearAudioFile}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 text-red-400 hover:text-red-300"
-                                        >
-                                            <XCircle size={18} />
-                                        </button>
-                                    )}
-                                </div>
-                                {editingSongId && typeof formData.audio_file === "string" && !audioPreview && (
-                                    <p className="mt-2 text-gray-400">File hiện tại: {formData.audio_file}</p>
+                                {(audioPreview || (editingSongId && formData.audio_file)) && (
+                                    <button
+                                        type="button"
+                                        onClick={clearAudioFile}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-400 hover:text-red-300"
+                                    >
+                                        <XCircle size={18} />
+                                    </button>
                                 )}
-                                {audioPreview && (
+                            </div>
+                            {editingSongId && typeof formData.audio_file === "string" && !audioPreview && (
+                                <p className="mt-2 text-gray-400">File hiện tại: {formData.audio_file}</p>
+                            )}
+                            {audioPreview && (
+                                isVideo ? (
+                                    <video controls className="w-full mt-2">
+                                        <source src={audioPreview} type="video/mp4" />
+                                        Trình duyệt không hỗ trợ video.
+                                    </video>
+                                ) : (
                                     <audio controls className="w-full mt-2">
                                         <source src={audioPreview} type="audio/mpeg" />
                                         Trình duyệt không hỗ trợ audio.
                                     </audio>
-                                )}
-                            </div>
-
-                            <div className="flex gap-4">
-                                <button
-                                    type="submit"
-                                    className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 py-2 rounded-lg transition-colors"
-                                >
-                                    {editingSongId ? <Save size={16} /> : <Plus size={16} />}
-                                    {editingSongId ? "Lưu" : "Thêm"}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={resetForm}
-                                    className="flex-1 flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg transition-colors"
-                                >
-                                    <XCircle size={16} /> Hủy
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                                )
+                            )}
+                        </div>
+            
+                        <div className="flex gap-4">
+                            <button
+                                type="submit"
+                                className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-500 py-2 rounded-lg transition-colors"
+                            >
+                                {editingSongId ? <Save size={16} /> : <Plus size={16} />}
+                                {editingSongId ? "Lưu" : "Thêm"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={resetForm}
+                                className="flex-1 flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 py-2 rounded-lg transition-colors"
+                            >
+                                <XCircle size={16} /> Hủy
+                            </button>
+                        </div>
+                    </form>
                 </div>
+            </div>
+            
             )}
 
             <div className="bg-gray-900 p-8 rounded-xl shadow-lg overflow-hidden">
@@ -454,9 +458,17 @@ export default function SongManager() {
                                         <td className="p-5 text-gray-200">{getAlbumName(song.album)}</td>
                                         <td className="p-5">
                                             {song.song_url ? (
-                                                <audio controls className="w-full max-w-[300px] h-10">
-                                                    <source src={`${BASE_URL}/audio/${song.song_url}`} type="audio/mpeg" />
-                                                </audio>
+                                                song.song_url.endsWith(".mp4") ? (
+                                                    <video controls className="w-full max-w-[300px] h-10">
+                                                        <source src={`${BASE_URL}/audio/${song.song_url}`} type="video/mp4" />
+                                                        Trình duyệt không hỗ trợ video.
+                                                    </video>
+                                                ) : (
+                                                    <audio controls className="w-full max-w-[300px] h-10">
+                                                        <source src={`${BASE_URL}/audio/${song.song_url}`} type="audio/mpeg" />
+                                                        Trình duyệt không hỗ trợ audio.
+                                                    </audio>
+                                                )
                                             ) : (
                                                 <span className="text-gray-500 italic">Không có file</span>
                                             )}

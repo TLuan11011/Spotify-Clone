@@ -590,6 +590,30 @@ def delete_user(request, pk):
     user.delete()
     return Response({"message": "Đã xóa người dùng thành công."}, status=status.HTTP_204_NO_CONTENT)
 
+#Đổi mật khẩu của người dùng
+@api_view(['POST'])
+def change_password(request, pk):
+    try:
+        user = User.objects.get(pk=pk)
+    except User.DoesNotExist:
+        return Response({"error": "Người dùng không tồn tại."}, status=status.HTTP_404_NOT_FOUND)
+
+    current_password = request.data.get('current_password')
+    new_password = request.data.get('new_password')
+
+    # Check if current password matches (plain text comparison)
+    if user.password_hash != current_password:
+        return Response({"error": "Mật khẩu hiện tại không chính xác."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Ensure new password is at least 6 characters
+    if len(new_password) < 6:
+        return Response({"error": "Mật khẩu mới phải có ít nhất 6 ký tự."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Update password_hash (plain text)
+    user.password_hash = new_password
+    user.save()
+
+    return Response({"message": "Mật khẩu đã được thay đổi thành công."}, status=status.HTTP_200_OK)
 # Lấy tin nhắn giữa 2 người dùng
 @api_view(['GET'])
 def get_messages_between_users(request):
@@ -650,6 +674,79 @@ def send_message(request):
 
 
 
+# @api_view(['POST'])
+# def create_vnpay_payment(request):
+#     user_id = request.data.get('user_id')
+#     if not user_id:
+#         return Response({'error': 'Thiếu user_id trong request'}, status=status.HTTP_400_BAD_REQUEST)
+
+#     try:
+#         user = User.objects.get(id=user_id)
+#     except User.DoesNotExist:
+#         return Response({'error': 'Người dùng không tồn tại'}, status=status.HTTP_404_NOT_FOUND)
+
+#     amount = 50000  # 50,000 VND (tương đương 2 USD)
+#     order_id = f"{user.id}_{int(time.time())}"
+#     order_info = f"Thanh toan Premium cho user {user.username}"
+
+#     # Đảm bảo thời gian đúng múi giờ Việt Nam (UTC+7)
+#     vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
+#     create_date = datetime.now(vn_tz).strftime('%Y%m%d%H%M%S')
+
+#     vnp_params = {
+#         'vnp_Version': '2.1.0',
+#         'vnp_Command': 'pay',
+#         'vnp_TmnCode': settings.VNPAY_TMN_CODE,
+#         'vnp_Amount': amount * 100,  # 50,000 VND * 100 = 5,000,000
+#         'vnp_CurrCode': 'VND',
+#         'vnp_TxnRef': order_id,
+#         'vnp_OrderInfo': order_info,
+#         'vnp_OrderType': 'other',
+#         'vnp_Locale': 'vn',
+#         'vnp_ReturnUrl': settings.VNPAY_RETURN_URL,
+#         'vnp_IpAddr': request.META.get('REMOTE_ADDR', '127.0.0.1'),
+#         'vnp_CreateDate': create_date,
+#     }
+
+#     # Sắp xếp tham số theo thứ tự alphabet
+#     sorted_params = dict(sorted(vnp_params.items()))
+    
+#     # Tạo chuỗi để hash, đảm bảo mã hóa đúng giá trị
+#     sign_data = '&'.join(f'{k}={urllib.parse.quote(str(v), safe="")}' for k, v in sorted_params.items())
+    
+#     # Tạo chữ ký với SHA512
+#     h = hmac.new(settings.VNPAY_HASH_SECRET.encode('utf-8'), sign_data.encode('utf-8'), hashlib.sha512)
+#     vnp_params['vnp_SecureHash'] = h.hexdigest()
+
+#     # Tạo URL thanh toán
+#     vnpay_url = f"{settings.VNPAY_PAYMENT_URL}?{urllib.parse.urlencode(vnp_params)}"
+#     return Response({'payment_url': vnpay_url}, status=status.HTTP_200_OK)
+    
+
+# @api_view(['GET'])
+# def vnpay_return(request):
+#     vnp_params = request.GET.dict()
+#     vnp_secure_hash = vnp_params.pop('vnp_SecureHash', None)
+    
+#     sorted_params = dict(sorted(vnp_params.items()))
+#     sign_data = '&'.join(f'{k}={urllib.parse.quote(str(v), safe="")}' for k, v in sorted_params.items())
+#     h = hmac.new(settings.VNPAY_HASH_SECRET.encode('utf-8'), sign_data.encode('utf-8'), hashlib.sha512)
+#     calculated_hash = h.hexdigest()
+
+#     if calculated_hash != vnp_secure_hash:
+#         return Response({'error': 'Chữ ký không hợp lệ'}, status=status.HTTP_400_BAD_REQUEST)
+
+#     if vnp_params['vnp_ResponseCode'] == '00':
+#         order_id = vnp_params['vnp_TxnRef']
+#         user_id = int(order_id.split('_')[0])
+#         user = User.objects.get(id=user_id)
+#         user.isPremium = True
+#         user.save()
+#         serializer = UserSerializer(user)
+#         return Response({'status': 'success', 'user': serializer.data}, status=status.HTTP_200_OK)
+#     else:
+#         return Response({'status': 'failed', 'message': 'Thanh toán thất bại'}, status=status.HTTP_400_BAD_REQUEST)
+
 @api_view(['POST'])
 def create_vnpay_payment(request):
     user_id = request.data.get('user_id')
@@ -661,11 +758,10 @@ def create_vnpay_payment(request):
     except User.DoesNotExist:
         return Response({'error': 'Người dùng không tồn tại'}, status=status.HTTP_404_NOT_FOUND)
 
-    amount = 50000  # 50,000 VND (tương đương 2 USD)
+    amount = 50000  # 50,000 VND
     order_id = f"{user.id}_{int(time.time())}"
     order_info = f"Thanh toan Premium cho user {user.username}"
 
-    # Đảm bảo thời gian đúng múi giờ Việt Nam (UTC+7)
     vn_tz = pytz.timezone('Asia/Ho_Chi_Minh')
     create_date = datetime.now(vn_tz).strftime('%Y%m%d%H%M%S')
 
@@ -673,7 +769,7 @@ def create_vnpay_payment(request):
         'vnp_Version': '2.1.0',
         'vnp_Command': 'pay',
         'vnp_TmnCode': settings.VNPAY_TMN_CODE,
-        'vnp_Amount': amount * 100,  # 50,000 VND * 100 = 5,000,000
+        'vnp_Amount': amount * 100,  # VNPay yêu cầu amount phải nhân 100
         'vnp_CurrCode': 'VND',
         'vnp_TxnRef': order_id,
         'vnp_OrderInfo': order_info,
@@ -685,40 +781,55 @@ def create_vnpay_payment(request):
     }
 
     # Sắp xếp tham số theo thứ tự alphabet
-    sorted_params = dict(sorted(vnp_params.items()))
+    sorted_params = sorted(vnp_params.items(), key=lambda x: x[0])
     
-    # Tạo chuỗi để hash, đảm bảo mã hóa đúng giá trị
-    sign_data = '&'.join(f'{k}={urllib.parse.quote(str(v), safe="")}' for k, v in sorted_params.items())
+    # Tạo chuỗi dữ liệu cần hash
+    hash_data = '&'.join([f'{k}={urllib.parse.quote_plus(str(v))}' for k, v in sorted_params])
     
-    # Tạo chữ ký với SHA512
-    h = hmac.new(settings.VNPAY_HASH_SECRET.encode('utf-8'), sign_data.encode('utf-8'), hashlib.sha512)
-    vnp_params['vnp_SecureHash'] = h.hexdigest()
+    # Tạo chữ ký
+    secure_hash = hmac.new(
+        settings.VNPAY_HASH_SECRET.encode('utf-8'),
+        hash_data.encode('utf-8'),
+        hashlib.sha512
+    ).hexdigest()
+
+    vnp_params['vnp_SecureHash'] = secure_hash
 
     # Tạo URL thanh toán
-    vnpay_url = f"{settings.VNPAY_PAYMENT_URL}?{urllib.parse.urlencode(vnp_params)}"
-    return Response({'payment_url': vnpay_url}, status=status.HTTP_200_OK)
-    
+    payment_url = settings.VNPAY_PAYMENT_URL + '?' + urllib.parse.urlencode(vnp_params)
+    return Response({'payment_url': payment_url}, status=status.HTTP_200_OK)
 
 @api_view(['GET'])
 def vnpay_return(request):
     vnp_params = request.GET.dict()
-    vnp_secure_hash = vnp_params.pop('vnp_SecureHash', None)
+    secure_hash = vnp_params.pop('vnp_SecureHash', '')
+
+    # Sắp xếp tham số theo thứ tự alphabet và bỏ qua các trường rỗng
+    sorted_params = sorted([(k, v) for k, v in vnp_params.items() if v], key=lambda x: x[0])
     
-    sorted_params = dict(sorted(vnp_params.items()))
-    sign_data = '&'.join(f'{k}={urllib.parse.quote(str(v), safe="")}' for k, v in sorted_params.items())
-    h = hmac.new(settings.VNPAY_HASH_SECRET.encode('utf-8'), sign_data.encode('utf-8'), hashlib.sha512)
-    calculated_hash = h.hexdigest()
+    # Tạo chuỗi dữ liệu cần hash
+    hash_data = '&'.join([f'{k}={urllib.parse.quote_plus(str(v))}' for k, v in sorted_params])
+    
+    # Tạo chữ ký
+    check_sum = hmac.new(
+        settings.VNPAY_HASH_SECRET.encode('utf-8'),
+        hash_data.encode('utf-8'),
+        hashlib.sha512
+    ).hexdigest()
 
-    if calculated_hash != vnp_secure_hash:
-        return Response({'error': 'Chữ ký không hợp lệ'}, status=status.HTTP_400_BAD_REQUEST)
+    if secure_hash != check_sum:
+        return Response({'error': 'Sai chữ ký'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if vnp_params['vnp_ResponseCode'] == '00':
+    if vnp_params.get('vnp_ResponseCode') == '00':
         order_id = vnp_params['vnp_TxnRef']
         user_id = int(order_id.split('_')[0])
-        user = User.objects.get(id=user_id)
-        user.isPremium = True
-        user.save()
-        serializer = UserSerializer(user)
-        return Response({'status': 'success', 'user': serializer.data}, status=status.HTTP_200_OK)
+        try:
+            user = User.objects.get(id=user_id)
+            user.isPremium = True
+            user.save()
+            serializer = UserSerializer(user)
+            return Response({'status': 'success', 'user': serializer.data}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'Người dùng không tồn tại'}, status=status.HTTP_404_NOT_FOUND)
     else:
         return Response({'status': 'failed', 'message': 'Thanh toán thất bại'}, status=status.HTTP_400_BAD_REQUEST)

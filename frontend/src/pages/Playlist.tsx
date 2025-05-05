@@ -17,8 +17,9 @@ type Song = {
   album: string | null;
   duration: number;
   song_url: string;
-  image_url: string; // Align with useAudio's Song type
+  image_url: string;
   premium: number;
+  isVideo?: boolean;
 };
 
 interface Playlist {
@@ -47,9 +48,9 @@ const Playlist: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Placeholder for user premium status (replace with actual logic)
-  const isPremiumUser = false; // Replace with auth context or API call
-
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isPremiumUser = user?.isPremium === true;
+  
   const formatDuration = (seconds: number): string => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -75,6 +76,7 @@ const Playlist: React.FC = () => {
             ? `/uploads/albums/${item.song.album_img}`
             : "/default-cover.png",
           premium: item.song.premium,
+          isVideo: item.song.song_url?.endsWith(".mp4") || false,
         }));
         setPlaylist({ ...data, songs: mappedSongs.map((song: Song) => ({ song })) });
         setSongList(mappedSongs);
@@ -104,6 +106,7 @@ const Playlist: React.FC = () => {
             ? `/uploads/albums/${song.album_img}`
             : "/default-cover.png",
           premium: song.premium,
+          isVideo: song.song_url?.endsWith(".mp4") || false,
         }));
         setAvailableSongs(mappedSongs);
       } catch (err) {
@@ -380,6 +383,11 @@ const Playlist: React.FC = () => {
                           Premium
                         </span>
                       )}
+                      {song.isVideo && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-600 text-white hover:bg-green-500 transition-colors">
+                          Video
+                        </span>
+                      )}
                     </div>
                     <div className="text-xs text-gray-400">{song.artist}</div>
                   </div>
@@ -440,6 +448,11 @@ const Playlist: React.FC = () => {
                           {song.premium === 1 && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors">
                               Premium
+                            </span>
+                          )}
+                          {song.isVideo && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-600 text-white hover:bg-green-500 transition-colors">
+                              Video
                             </span>
                           )}
                         </div>

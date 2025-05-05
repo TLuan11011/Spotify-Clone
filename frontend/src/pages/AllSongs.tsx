@@ -12,6 +12,7 @@ type Song = {
   song_url: string;
   image_url: string;
   premium: number;
+  isVideo: boolean;
 };
 
 const AllSongs: React.FC = () => {
@@ -19,8 +20,8 @@ const AllSongs: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const { handlePlaySong, setSongList } = useAudio();
   
-  // Placeholder for user premium status (replace with actual logic)
-  const isPremiumUser = false; // Example: Replace with auth context or API call to check user status
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  const isPremiumUser = user?.isPremium === true;
 
   useEffect(() => {
     setLoading(true);
@@ -38,6 +39,7 @@ const AllSongs: React.FC = () => {
             ? `/uploads/albums/${song.album_img}`
             : "/default-cover.png",
           premium: song.premium || 0,
+          isVideo: song.song_url?.endsWith(".mp4") || false,
         }));
         setSongs(mappedSongs);
         setSongList(mappedSongs);
@@ -152,6 +154,11 @@ const AllSongs: React.FC = () => {
                           {song.premium === 1 && (
                             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors">
                               Premium
+                            </span>
+                          )}
+                          {song.isVideo && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-600 text-white hover:bg-green-500 transition-colors">
+                              Video
                             </span>
                           )}
                         </div>

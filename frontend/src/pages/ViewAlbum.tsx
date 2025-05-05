@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { PlayIcon, Clock, MoreHorizontal, Download } from "lucide-react";
+import React, { useState, useEffect, useCallback} from "react";
+import { PlayIcon, Clock3Icon, MoreHorizontal, Download } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useAudio } from "../AudioContext";
 
@@ -33,6 +33,50 @@ const ViewAlbum: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const { handlePlaySong, setSongList } = useAudio();
+    const [isPremium, setIsPremium] = useState<boolean | null>(null);
+    
+    useEffect(() => {
+        const savedUser = localStorage.getItem("user");
+        if (savedUser) {
+            const user = JSON.parse(savedUser); // Parse và lấy đối tượng người dùng
+            setIsPremium(user.isPremium); // Set chỉ trạng thái premium
+        } else {
+            setIsPremium(null); // Nếu không có user, set là null
+        }
+    }, []);
+
+    const handleDownload = useCallback(
+        (e: React.MouseEvent, song: Song) => {
+            e.stopPropagation(); // Prevent triggering the song play event
+
+            // Check if the song is premium and if the user is not premium
+            if (song.premium === 1 && !isPremium) {
+                alert("Bạn cần tài khoản Premium để tải bài hát này.");
+                return;
+            }
+
+            // Proceed with download if the song is non-premium or the user is premium
+            const songUrl = `http://127.0.0.1:8000/audio/${song.song_url}`;
+            const xhr = new XMLHttpRequest();
+            xhr.open("GET", songUrl, true);
+            xhr.responseType = "blob";
+            xhr.onload = () => {
+                const blob = xhr.response;
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.setAttribute("download", `${song.name}.mp3`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+            };
+            xhr.onerror = () => {
+                alert("Không thể tải bài hát này.");
+            };
+            xhr.send();
+        },
+        [isPremium]
+    );
+
 
     const formatDuration = (seconds: number): string => {
         const minutes = Math.floor(seconds / 60);
@@ -102,15 +146,6 @@ const ViewAlbum: React.FC = () => {
 
         fetchAlbumData();
     }, [id, setSongList]);
-
-    const handleDownload = (song: Song) => {
-        if (song.premium === 1) {
-            alert('Bài hát này chỉ dành cho Premium!');
-            return;
-        }
-        alert(`Đang tải ${song.name}...`);
-        // Thêm logic tải file thực tế tại đây
-    };
 
     const handlePlayAll = () => {
         if (albumData?.songs && albumData.songs.length > 0) {
@@ -194,7 +229,9 @@ const ViewAlbum: React.FC = () => {
                         <div className="col-span-1 font-semibold">#</div>
                         <div className="col-span-5 font-semibold">Title</div>
                         <div className="col-span-3 font-semibold">Album</div>
-                        <div className="col-span-2 font-semibold flex justify-end">Duration</div>
+                        <div className="col-span-2 font-semibold flex justify-end">
+                            <Clock3Icon size={24} /> {/* Thay thế Duration bằng icon đồng hồ */}
+                        </div>
                         <div className="col-span-1 font-semibold"></div>
                     </div>
 
@@ -245,11 +282,8 @@ const ViewAlbum: React.FC = () => {
                                             ? 'text-gray-600 cursor-not-allowed' 
                                             : 'text-gray-400 hover:text-white'
                                     }`}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDownload(song);
-                                    }}
-                                    disabled={song.premium === 1}
+                                    onClick={(e) => handleDownload(e, song)}
+                                    disabled={song.premium === 1 && !isPremium}
                                 >
                                     <Download size={20} />
                                 </button>

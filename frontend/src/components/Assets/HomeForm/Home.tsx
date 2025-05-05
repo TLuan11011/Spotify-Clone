@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { PlayIcon, CircleEllipsis } from "lucide-react";
+import { PlayIcon, CircleEllipsis, Download } from "lucide-react";
 import { useAudio } from "../../../AudioContext";
 import {useNavigate} from "react-router-dom";
 
@@ -12,12 +12,14 @@ interface Song {
   song_url: string;
   image_url: string;
   premium: number;
+  isVideo: boolean;
 }
 interface Album {
   id: number;
   name: string;
   cover_image: string;
   artist_name: string;
+  status: number;
 }
 
 const Home: React.FC = () => {
@@ -42,12 +44,13 @@ const Home: React.FC = () => {
     const fetchTopSongs = async () => {
       setIsLoading(true);
       try {
-        const response = await fetch("http://localhost:8000/api/songs/?ordering=-play_count");
+        const response = await fetch("http://localhost:8000/api/songs/");
         if (!response.ok) throw new Error("Không thể tải bảng xếp hạng.");
         const data = await response.json();
+        const sortedData = data.sort((a: any, b: any) => b.play_count - a.play_count);
 
         // Chỉ lấy 10 bài hát đầu tiên
-        const top10Songs = data.slice(0, 10);
+        const top10Songs = sortedData.slice(0, 10);
 
         const mappedSongs = top10Songs.map((song: any) => ({
           id: song.id,
@@ -60,6 +63,7 @@ const Home: React.FC = () => {
             ? `/uploads/albums/${song.album_img}`
             : "/default-cover.png",
           premium: song.premium || 0,
+          isVideo: song.song_url?.endsWith(".mp4") || false,
         }));
 
         setTopSongs(mappedSongs);
@@ -80,8 +84,8 @@ const Home: React.FC = () => {
         const response = await fetch("http://localhost:8000/api/albums/");
         if (!response.ok) throw new Error("Không thể tải danh sách album.");
         const data = await response.json();
-        // const filteredAlbums = data.filter((album: any) => album.songs && album.songs.length > 0);
-        setAlbums(data);
+        const filteredAlbums = data.filter((album: any) => album.status === 1);
+        setAlbums(filteredAlbums);
       } catch (err) {
         setError("Đã xảy ra lỗi khi tải danh sách album.");
         console.error(err);
@@ -98,18 +102,25 @@ const Home: React.FC = () => {
       alert("Bạn cần tài khoản Premium để tải bài hát này.");
       return;
     }
+  
     const songUrl = `http://localhost:8000/audio/${song.song_url}`;
+    const extension = song.song_url.split('.').pop(); // lấy phần mở rộng: mp3/mp4
+  
     const xhr = new XMLHttpRequest();
     xhr.open("GET", songUrl, true);
     xhr.responseType = "blob";
     xhr.onload = () => {
-      const blob = xhr.response;
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", `${song.name}.mp3`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      if (xhr.status === 200) {
+        const blob = xhr.response;
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `${song.name}.${extension}`); // đúng đuôi
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else {
+        alert("Tải thất bại. Mã lỗi: " + xhr.status);
+      }
     };
     xhr.onerror = () => {
       alert("Không thể tải bài hát này.");
@@ -192,6 +203,11 @@ const Home: React.FC = () => {
                             Premium
                           </span>
                         )}
+                        {song.isVideo && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-600 text-white">
+                            Video
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm text-gray-400 truncate">{song.artist}</p>
                     </div>
@@ -201,11 +217,16 @@ const Home: React.FC = () => {
                   </div>
                   <div className="w-24 text-center">
                     <button
-                      className="text-gray-400 hover:text-gray-200 transition-colors"
+                      className={`text-gray-400 hover:text-gray-200 transition-colors ${
+                        song.premium === 1
+                        ? 'text-gray-600 cursor-not-allowed'
+                        : 'text-gray-400 hover:text-white'
+                      }`}
                       onClick={(e) => handleDownload(e, song)}
                     >
-                      <CircleEllipsis size={20} />
+                      <Download size={20} />
                     </button>
+                    
                   </div>
                 </div>
               ))}

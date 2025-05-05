@@ -110,7 +110,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, user }) => {
   return (
     <div className="w-64 h-full bg-[#121212] border-r border-gray-900 flex flex-col text-gray-300">
       <div className="p-6">
-        <h1 className="text-4xl font-bold text-white">Spotify</h1>
+        <NavLink
+          to="/">
+          <h1 className="text-4xl font-bold text-white">Spotify</h1>
+        </NavLink>
       </div>
       <nav className="flex-1 px-4">
         <ul className="space-y-1">
@@ -140,20 +143,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isLoggedIn, user }) => {
               }
             >
               <span>Tất cả bài hát</span>
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/loved"
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-lg transition ${
-                  isActive
-                    ? "bg-[#1db954] text-black"
-                    : "hover:bg-gray-800 hover:text-white"
-                }`
-              }
-            >
-              <span>Bài hát yêu thích</span>
             </NavLink>
           </li>
           <li>

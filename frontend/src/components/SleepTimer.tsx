@@ -27,6 +27,7 @@ const SleepTimer: React.FC<SleepTimerProps> = ({ onClose, onTimerSet, onTimerSto
       onClose(); // Đóng popup
     }, time * 60 * 1000); // Chuyển phút thành mili giây
     setTimerId(id);
+    onClose();
   };
 
   // Xử lý khi dừng hẹn giờ

@@ -168,16 +168,43 @@ const PremiumSignup: React.FC<PremiumSignupProps> = ({ user, setUser }) => {
     }
   }, [user, navigate]);
 
+  // const handleVnpayPayment = async () => {
+  //   if (!user) {
+  //     setError("Vui lòng đăng nhập để tiếp tục");
+  //     return;
+  //   }
+
+  //   try {
+  //     const response = await axios.post(
+  //       "http://localhost:8000/api/vnpay/create/",
+  //       { user_id: user.id },
+  //       {
+  //         headers: { "Content-Type": "application/json" },
+  //         withCredentials: true,
+  //       }
+  //     );
+  //     const paymentUrl = response.data.payment_url;
+  //     if (paymentUrl) {
+  //       window.location.href = paymentUrl;
+  //     } else {
+  //       throw new Error("Không nhận được URL thanh toán từ server");
+  //     }
+  //   } catch (err: any) {
+  //     setError("Không thể tạo thanh toán: " + (err.response?.data?.error || err.message));
+  //   }
+  // };
+
+
   const handleVnpayPayment = async () => {
     if (!user) {
       setError("Vui lòng đăng nhập để tiếp tục");
       return;
     }
-
+  
     try {
       const response = await axios.post(
         "http://localhost:8000/api/vnpay/create/",
-        { user_id: user.id },
+        { user_id: user.id },  // Đảm bảo gửi đúng field user_id
         {
           headers: { "Content-Type": "application/json" },
           withCredentials: true,
@@ -193,7 +220,6 @@ const PremiumSignup: React.FC<PremiumSignupProps> = ({ user, setUser }) => {
       setError("Không thể tạo thanh toán: " + (err.response?.data?.error || err.message));
     }
   };
-
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     if (query.get("vnp_ResponseCode")) {
